@@ -28,14 +28,13 @@ public class FileDownloader {
         blockNumber = 0;
         long transferredCount;
 
-        try {
-            ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream());
+        try (ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream())) {
             do {
                 File partFile = createFilePartPath(blockNumber).toFile();
                 blockNumber++;
 
-                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile)) {
-                    FileChannel fileOutputChannel = fileOutputStream.getChannel();
+                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
+                     FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(readableByteChannel, 0, blockSize);
                 } catch (FileNotFoundException | SecurityException e) {
                     return handleException(e, "Cannot save to file: " + partFile.getAbsolutePath());
@@ -50,7 +49,7 @@ public class FileDownloader {
         return true;
     }
 
-    public boolean joinFileParts() {
+    public boolean joinDeleteFileParts() {
         try {
             Files.deleteIfExists(filePath);
             Files.createFile(filePath);
@@ -65,6 +64,14 @@ public class FileDownloader {
                 Files.copy(filePartPath, out);
             } catch (IOException e) {
                 return handleException(e, "Error while joining parts of file");
+            }
+        }
+
+        for (int i = 0; i < blockNumber; i++) {
+            Path filePartPath = createFilePartPath(i);
+            try {
+                Files.deleteIfExists(filePartPath);
+            } catch (IOException ignored) {
             }
         }
 

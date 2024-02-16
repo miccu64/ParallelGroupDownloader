@@ -9,6 +9,6 @@ public class Main {
         FileDownloader downloader = new FileDownloader(url, blockSizeInMB, fileName);
 
         if (downloader.downloadWholeFile())
-            downloader.joinFileParts();
+            downloader.joinDeleteFileParts();
     }
 }
