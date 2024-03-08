@@ -1,9 +1,8 @@
-import common.BroadcastService;
 import common.UdpService;
-import server.FileDownloader;
+import common.packet.Command;
+import common.packet.CommandFindOthers;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class Main {
 //    public static void main(String[] args) throws IOException {
@@ -18,7 +17,24 @@ public class Main {
 //    }
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        int port = parsePort(args);
+
+        if (args.length > 0){
+            UdpService udpService = new UdpService(port);
+            udpService.start();
+            Thread.sleep(1000);
+            Command packet = new CommandFindOthers();
+            udpService.sendBroadcast(packet);
+            Thread.sleep(100000);
+        } else {
+            UdpService udpService = new UdpService(port);
+            udpService.start();
+        }
+    }
+
+    private static int parsePort(String[] args){
         int port = 5000;
+
         if (args.length > 0) {
             try {
                 int parsedPort = Integer.parseInt(args[0]);
@@ -33,17 +49,8 @@ public class Main {
                 System.out.println("Could not parse given port number.");
             }
         }
-
         System.out.println("Using port: " + port);
 
-        if (args.length > 0){
-            Thread.sleep(5000);
-            BroadcastService broadcastService = new BroadcastService(port);
-            broadcastService.sendBroadcast("aaa");
-            Thread.sleep(100000);
-        } else {
-            UdpService udpService = new UdpService(port);
-            udpService.start();
-        }
+        return port;
     }
 }
