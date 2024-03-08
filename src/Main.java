@@ -3,6 +3,9 @@ import common.packet.Command;
 import common.packet.CommandFindOthers;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Main {
 //    public static void main(String[] args) throws IOException {
@@ -17,22 +20,19 @@ public class Main {
 //    }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        int port = parsePort(args);
+        List<Integer> otherInstancesPorts = new ArrayList<>(Arrays.asList(10100, 10101, 10102));
+        int listenPort = parsePort(args);
+        otherInstancesPorts.remove(Integer.valueOf(listenPort));
 
-        if (args.length > 0){
-            UdpService udpService = new UdpService(port);
-            udpService.start();
-            Thread.sleep(1000);
-            Command packet = new CommandFindOthers();
-            udpService.sendBroadcast(packet);
-            Thread.sleep(100000);
-        } else {
-            UdpService udpService = new UdpService(port);
-            udpService.start();
-        }
+        UdpService udpService = new UdpService(listenPort, otherInstancesPorts);
+        udpService.start();
+        Thread.sleep(5000);
+        Command packet = new CommandFindOthers(String.valueOf(listenPort));
+        udpService.sendBroadcast(packet);
+        Thread.sleep(100000);
     }
 
-    private static int parsePort(String[] args){
+    private static int parsePort(String[] args) {
         int port = 5000;
 
         if (args.length > 0) {

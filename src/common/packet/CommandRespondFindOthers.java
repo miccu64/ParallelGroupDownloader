@@ -3,11 +3,11 @@ package common.packet;
 import java.net.InetAddress;
 
 public class CommandRespondFindOthers extends Command {
-    public CommandRespondFindOthers() {
-        super(CommandType.ResponseToFindOthers, "");
+    public CommandRespondFindOthers(String message) {
+        super(CommandType.ResponseToFindOthers, message);
     }
 
-    public CommandRespondFindOthers(InetAddress sourceAddress) {
-        super(CommandType.ResponseToFindOthers, "", sourceAddress);
+    public CommandRespondFindOthers(String message, InetAddress sourceAddress) {
+        super(CommandType.ResponseToFindOthers, message, sourceAddress);
     }
 }

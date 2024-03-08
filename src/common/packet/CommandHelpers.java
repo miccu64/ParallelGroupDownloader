@@ -21,9 +21,9 @@ public class CommandHelpers {
 
         switch (type) {
             case FindOthers:
-                return new CommandFindOthers(address);
+                return new CommandFindOthers(message, address);
             case ResponseToFindOthers:
-                return new CommandRespondFindOthers(address);
+                return new CommandRespondFindOthers(message, address);
             default:
                 throw new IllegalArgumentException("Wrong command type.");
         }
