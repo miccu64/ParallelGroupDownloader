@@ -2,6 +2,7 @@ package common.packet;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 
 public class CommandHelpers {
@@ -27,5 +28,9 @@ public class CommandHelpers {
             default:
                 throw new IllegalArgumentException("Wrong command type.");
         }
+    }
+
+    public static InetAddress getBroadcastAddress() throws UnknownHostException {
+        return InetAddress.getByName("255.255.255.255");
     }
 }

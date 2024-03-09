@@ -1,5 +1,7 @@
 package common.packet;
 
+import common.Socket;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -9,8 +11,8 @@ public abstract class Command {
 
     protected final String message;
     protected final CommandType type;
-    protected InetAddress sourceAddress;
-    protected int sourcePort;
+    protected Socket sourceSocket;
+    protected Socket destinationSocket;
 
     public String getMessage() {
         return message;
@@ -20,33 +22,33 @@ public abstract class Command {
         return type;
     }
 
-    public InetAddress getSourceAddress() {
-        return sourceAddress;
+    public Socket getSourceSocket() {
+        return sourceSocket;
     }
 
-    public int getSourcePort() {
-        return sourcePort;
+    public Socket getDestinationSocket() {
+        return destinationSocket;
     }
 
-    protected Command(CommandType type, String message) {
+    protected Command(CommandType type, String message, int sourcePort, Socket destination) {
         this.type = type;
+        this.destinationSocket = destination;
         if (message == null)
             message = "";
-        this.message = separator + type + separator + message + separator;
+        this.message = separator + type + separator + sourcePort + separator + message + separator;
     }
 
-    protected Command(CommandType type, String message, InetAddress source) {
+    protected Command(CommandType type, String message, InetAddress sourceAddress) {
         this.type = type;
         this.message = message;
-        this.sourceAddress = source;
 
-        String[] splitMessage = splitMessage();
-        sourcePort = Integer.parseInt(splitMessage[1]);
+        int port = Integer.parseInt(splitMessage()[1]);
+        this.sourceSocket = new Socket(sourceAddress, port);
     }
 
-    public DatagramPacket createDatagram(InetAddress destination, int port) {
+    public DatagramPacket createDatagram() {
         byte[] data = message.getBytes();
-        return new DatagramPacket(data, data.length, destination, port);
+        return new DatagramPacket(data, data.length, this.destinationSocket.getAddress(), this.destinationSocket.getPort());
     }
 
     protected String[] splitMessage(){

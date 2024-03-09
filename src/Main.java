@@ -1,11 +1,14 @@
+import common.Socket;
 import common.UdpService;
 import common.packet.Command;
 import common.packet.CommandFindOthers;
+import common.packet.CommandHelpers;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
 //    public static void main(String[] args) throws IOException {
@@ -27,9 +30,16 @@ public class Main {
         UdpService udpService = new UdpService(listenPort, otherInstancesPorts);
         udpService.start();
         Thread.sleep(5000);
-        Command packet = new CommandFindOthers(String.valueOf(listenPort));
-        udpService.sendBroadcast(packet);
-        Thread.sleep(100000);
+        for (int destinationPort : otherInstancesPorts){
+            Socket destinationSocket = new Socket(CommandHelpers.getBroadcastAddress(), destinationPort);
+            Command packet = new CommandFindOthers(listenPort, destinationSocket);
+            udpService.send(packet);
+        }
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter download URL: ");
+        String url = scanner.nextLine();
+        System.out.println(url);
     }
 
     private static int parsePort(String[] args) {
@@ -53,4 +63,5 @@ public class Main {
 
         return port;
     }
+
 }

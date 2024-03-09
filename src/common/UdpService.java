@@ -11,17 +11,20 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UdpService extends Thread {
     private final DatagramSocket socket;
     private final byte[] buf = new byte[256];
     private final int listenPort;
     private final List<Integer> differentInstancesPorts;
+    private final ConcurrentHashMap<String, Socket> gatheredSockets;
 
     public UdpService(int listenPort, List<Integer> differentInstancesPorts) throws SocketException {
         this.listenPort = listenPort;
         this.differentInstancesPorts = differentInstancesPorts;
         socket = new DatagramSocket(this.listenPort);
+        gatheredSockets = new ConcurrentHashMap<>();
     }
 
     public void run() {
@@ -34,39 +37,26 @@ public class UdpService extends Thread {
             }
 
             Command receivedCommand = CommandHelpers.readPacket(datagram);
-            System.out.println("Received from: " + receivedCommand.getSourceAddress() + ":" + datagram.getPort() + ", data: " + receivedCommand.getMessage());
+            Socket sourceSocket = receivedCommand.getSourceSocket();
+            gatheredSockets.putIfAbsent(sourceSocket.toString(), sourceSocket);
+
+            System.out.println("Received from: " + sourceSocket + ", data: " + receivedCommand.getMessage());
 
             if (receivedCommand.getType() == CommandType.FindOthers) {
-                Command command = new CommandRespondFindOthers(String.valueOf(this.listenPort));
-                sendUnicast(command, receivedCommand.getSourceAddress(), receivedCommand.getSourcePort());
+                Command command = new CommandRespondFindOthers(listenPort, sourceSocket);
+                send(command);
             }
         }
         //socket.close();
     }
 
-    public void sendUnicast(Command command, InetAddress destination, int port) {
-        DatagramPacket packet = command.createDatagram(destination, port);
+    public void send(Command command) {
+        DatagramPacket packet = command.createDatagram();
         try {
             socket.send(packet);
+            System.out.println("Sent to: " + command.getDestinationSocket()  + " : " + command.getMessage());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void sendBroadcast(Command packet) throws IOException {
-        InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
-        String message = packet.getMessage();
-        byte[] data = message.getBytes();
-
-        for (int port : differentInstancesPorts) {
-            DatagramSocket socket = new DatagramSocket();
-            socket.setBroadcast(true);
-
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, broadcastAddress, port);
-            socket.send(sendPacket);
-
-            socket.close();
-        }
-        System.out.println("Sent on broadcast: " + message);
     }
 }
