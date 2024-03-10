@@ -1,7 +1,9 @@
 package server;
 
+import common.DownloaderException;
+
 import java.io.*;
-import java.net.URL;
+import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -10,45 +12,60 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+import static common.PrepareDownloadUtils.downloadPath;
+
 public class FileDownloader {
     private final int blockSize;
     private final Path filePath;
+    private final String fileName;
     private final URL url;
+    private final long fileSizeInMB;
+
     private int blockNumber = 0;
 
-    public FileDownloader(String _url, int _blockSizeInMB, String _fileName) throws IOException {
-        url = new URL(_url);
-
-        blockSize = _blockSizeInMB * 1024 * 1024;
-        String downloadFolderName = "downloads";
-        filePath = Paths.get(downloadFolderName, _fileName);
-
-        Files.createDirectories(Paths.get(downloadFolderName));
+    public long getFileSizeInMB() {
+        return fileSizeInMB;
     }
 
-    public boolean downloadWholeFile() {
+    public String getFileName() {
+        return fileName;
+    }
+
+    public FileDownloader(String url, int blockSizeInMB) throws DownloaderException {
+        URI uri;
+        try {
+            uri = new URI(url);
+            this.url = uri.toURL();
+        } catch (MalformedURLException | URISyntaxException e) {
+            throw new DownloaderException(e, "Malformed URL");
+        }
+
+        blockSize = blockSizeInMB * 1024 * 1024;
+        fileName = getFileNameFromUrl(uri);
+
+        filePath = Paths.get(String.valueOf(downloadPath), fileName);
+
+        this.fileSizeInMB = findFileSizeInMB();
+    }
+
+    public void downloadWholeFile() throws DownloaderException {
         blockNumber = 0;
         long transferredCount;
 
-        try (ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream())) {
+        try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
             do {
                 File partFile = createFilePartPath(blockNumber).toFile();
                 blockNumber++;
 
-                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
-                     FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
-                    transferredCount = fileOutputChannel.transferFrom(readableByteChannel, 0, blockSize);
-                } catch (FileNotFoundException | SecurityException e) {
-                    return handleException(e, "Cannot save to file: " + partFile.getAbsolutePath());
-                } catch (Exception e) {
-                    return handleException(e, "Problem with downloading file");
+                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
+                    transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
+                } catch (SecurityException | IOException e) {
+                    throw new DownloaderException(e, "Cannot save to file: " + partFile.getAbsolutePath());
                 }
             } while (transferredCount == blockSize);
         } catch (IOException e) {
-            return handleException(e, "Cannot open URL. Download aborted.");
+            throw new DownloaderException(e, "Cannot open given URL. Download aborted");
         }
-
-        return true;
     }
 
     public boolean joinDeleteFileParts() {
@@ -78,6 +95,39 @@ public class FileDownloader {
         }
 
         return true;
+    }
+
+    private String getFileNameFromUrl(URI uri){
+        Path path;
+        try {
+            path = Paths.get(uri.getPath());
+        } catch (Exception ignored) {
+            path = Paths.get(uri);
+        }
+        return path.getFileName().toString();
+    }
+
+    private long findFileSizeInMB() {
+        long fileSize = -1;
+
+        try {
+            URLConnection urlConnection = url.openConnection();
+            if (urlConnection instanceof HttpURLConnection) {
+                HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
+                httpURLConnection.setRequestMethod("HEAD");
+                fileSize = httpURLConnection.getContentLengthLong();
+            } else {
+                fileSize = urlConnection.getContentLengthLong();
+
+            }
+
+            if (fileSize > 0) {
+                fileSize = (long) Math.ceil((double) fileSize / (double) (1024 * 1024));
+            }
+        } catch (IOException ignored) {
+        }
+
+        return fileSize;
     }
 
     private Path createFilePartPath(int partNumber) {

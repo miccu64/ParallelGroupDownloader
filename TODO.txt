@@ -1,0 +1,2 @@
+- wyłączanie obecnej instancji
+- wyłączenie wszystkich instancji na wszystkich PC
