@@ -3,6 +3,7 @@ package common;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,15 @@ public class PrepareDownloadUtils {
 
     public static boolean beforeDownloadCheck(long fileSizeInBytes) throws DownloaderException {
         return checkFreeSpace(fileSizeInBytes);
+    }
+
+    public static boolean isValidUrl(String urlToCheck) {
+        try {
+            new URL(urlToCheck).toURI();
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static boolean checkFreeSpace(long fileSizeInBytes) throws DownloaderException {

@@ -1,2 +1,3 @@
 - wyłączanie obecnej instancji
 - wyłączenie wszystkich instancji na wszystkich PC
+- wyszukiwanie wspólnego socketu multicastu i oznajmienie go innym instancjom

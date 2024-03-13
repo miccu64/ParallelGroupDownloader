@@ -1,3 +1,5 @@
+import common.DownloaderException;
+import common.PrepareDownloadUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import server.FileDownloader;
@@ -15,33 +17,32 @@ import java.util.Random;
 
 public class DownloaderTests {
     @Test
-    public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException {
-        String destinationDirectoryName = "downloads";
-        Path testFilePath = Paths.get(destinationDirectoryName, "TestPartChecksumsFile");
+    public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException, DownloaderException {
+        String name = "testOriginalAndDownloadedFilesChecksums";
+        String destinationDirectoryName = String.valueOf(PrepareDownloadUtils.downloadPath);
+        Path testFilePath = Paths.get(destinationDirectoryName, name);
         URL url = testFilePath.toUri().toURL();
-        String downloadedFileName = "TestPartChecksumsFileDownloaded";
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1, downloadedFileName);
+        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
 
         byte[] bytes = new byte[1024 * 1024 * 10];
         new Random(22).nextBytes(bytes);
-        Path downloadedFilePath = Paths.get(destinationDirectoryName, downloadedFileName);
         try {
             Files.write(testFilePath, bytes);
 
-            Assertions.assertTrue(fileDownloader.downloadWholeFile());
+            fileDownloader.downloadWholeFile();
             Assertions.assertTrue(fileDownloader.joinDeleteFileParts());
 
             byte[] originalChecksum = fileChecksum(testFilePath);
-            byte[] downloadedChecksum = fileChecksum(downloadedFilePath);
+            byte[] downloadedChecksum = fileChecksum(PrepareDownloadUtils.downloadPath);
 
             Assertions.assertArrayEquals(originalChecksum, downloadedChecksum);
         } finally {
             Files.deleteIfExists(testFilePath);
             for (int i = 0; i < 11; i++) {
-                Path path = Paths.get(destinationDirectoryName, downloadedFileName + ".part" + i);
+                Path path = Paths.get(destinationDirectoryName, name + ".part" + i);
                 Files.deleteIfExists(path);
             }
-            Files.deleteIfExists(downloadedFilePath);
+            Files.deleteIfExists(testFilePath);
         }
     }
 
