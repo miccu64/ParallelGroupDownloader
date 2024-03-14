@@ -26,7 +26,7 @@ public class MainThread extends Thread {
         try {
             cyclicBarrier.await();
 
-            Command packet = new Command(CommandType.FindOthers, "");
+            Command packet = new Command(CommandType.FindOthers, null);
             udpService.send(packet);
 
             if (canTakeInput.compareAndSet(true, false)) {

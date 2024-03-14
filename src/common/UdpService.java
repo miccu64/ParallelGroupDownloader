@@ -28,22 +28,22 @@ public class UdpService extends Thread {
             DatagramPacket datagram = new DatagramPacket(buf, buf.length);
             try {
                 socket.receive(datagram);
+
+                Command receivedCommand = new Command(datagram);
+                System.out.println("Received: " + receivedCommand);
+
+                switch (receivedCommand.getType()) {
+                    case FindOthers:
+                        Command command = new Command(CommandType.ResponseToFindOthers, null);
+                        send(command);
+                        break;
+                    case DownloadStart:
+                        loop = false;
+                        break;
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
-
-            Command receivedCommand = new Command(datagram);
-
-            System.out.println("Received: " + receivedCommand.getMessage());
-
-            switch (receivedCommand.getType()) {
-                case FindOthers:
-                    Command command = new Command(CommandType.ResponseToFindOthers, "");
-                    send(command);
-                    break;
-                case DownloadStart:
-                    loop = false;
-                    break;
+            } catch (DownloaderException ignored) {
             }
         }
     }
@@ -52,7 +52,7 @@ public class UdpService extends Thread {
         DatagramPacket packet = command.createDatagram(group, port);
         try {
             socket.send(packet);
-            System.out.println("Sent: " + command.getMessage());
+            System.out.println("Sent: " + command);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

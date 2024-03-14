@@ -1,57 +1,35 @@
 package common.packet;
 
+import common.DownloaderException;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Map;
 
 public class Command {
-    public static final String separator = "&&&";
-
-    private final String message;
-    private final CommandType type;
-
-    public String getMessage() {
-        return message;
-    }
+    private final CommandData data;
 
     public CommandType getType() {
-        return type;
+        return data.getCommandType();
     }
 
-    public Command(CommandType type, String message) {
-        this.type = type;
-        if (message == null)
-            message = "";
-        this.message = separator + type + separator + message + separator;
+    public Command(CommandType type, Map<String, String> data) {
+        this.data = new CommandData(type, data);
     }
 
-    public Command(DatagramPacket packet) {
-        message = new String(packet.getData(), 0, packet.getLength());
-        String[] splitData = Arrays.stream(message.split(separator))
-                .filter(str -> !str.isEmpty())
-                .toArray(String[]::new);
-        if (splitData.length < 1) {
-            throw new RuntimeException("Packet does not have proper format.");
-        }
-
-        InetAddress address = packet.getAddress();
-        type = CommandType.valueOf(splitData[0]);
+    public Command(DatagramPacket packet) throws DownloaderException {
+        String message = new String(packet.getData(), 0, packet.getLength());
+        data = new CommandData(message);
     }
 
     public DatagramPacket createDatagram(InetAddress address, int port) {
-        byte[] data = message.getBytes();
+        byte[] data = this.data.toString().getBytes();
 
         return new DatagramPacket(data, data.length, address, port);
     }
 
-    private String[] splitMessage(){
-        String[] splitData = Arrays.stream(message.split(separator))
-            .filter(str -> !str.isEmpty())
-            .toArray(String[]::new);
-
-        if (splitData.length < 1)
-            throw new RuntimeException("Packet does not have proper format.");
-
-        return splitData;
+    @Override
+    public String toString() {
+        return data.toString();
     }
 }
