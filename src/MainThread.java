@@ -1,25 +1,31 @@
-import common.PrepareDownloadUtils;
+import common.DownloadStatusEnum;
+import common.DownloaderException;
 import common.UdpService;
 import common.packet.Command;
 import common.packet.CommandType;
+import server.FileDownloader;
 
-import java.io.IOException;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.Scanner;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MainThread extends Thread {
+public class MainThread extends Thread implements PropertyChangeListener {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
     private final CyclicBarrier cyclicBarrier;
-    private final int port;
     private final UdpService udpService;
+    private FileDownloader downloader;
 
-    public MainThread(String multicastIp, int port, CyclicBarrier cyclicBarrier) throws IOException {
+    public MainThread(String multicastIp, int port, CyclicBarrier cyclicBarrier, String url) throws DownloaderException {
         this.cyclicBarrier = cyclicBarrier;
-        this.port = port;
 
         udpService = new UdpService(multicastIp, port);
         udpService.start();
+
+        if (url != null){
+            downloader = new FileDownloader(url, 1);
+        }
     }
 
     public void run() {
@@ -30,8 +36,7 @@ public class MainThread extends Thread {
             udpService.send(packet);
 
             if (canTakeInput.compareAndSet(true, false)) {
-                String url = waitForInputInvokeDownload();
-                //CommandDownloadStart command = new CommandDownloadStart(url, listenPort, udpService.getGatheredSockets())
+                waitForUserInput();
             }
 
             cyclicBarrier.await();
@@ -40,15 +45,31 @@ public class MainThread extends Thread {
         }
     }
 
-    private String waitForInputInvokeDownload() {
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        DownloadStatusEnum status = ((DownloadStatusEnum) evt.getNewValue());
+    }
+
+    private void waitForUserInput() {
+        Scanner scanner = new Scanner(System.in);
+
         while (true) {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("Enter download URL: ");
-            String url = scanner.nextLine();
-            if (PrepareDownloadUtils.isValidUrl(url)) {
-                return url;
-            } else {
-                System.out.println("Invalid URL");
+            System.out.println("1) Start downloading");
+            System.out.println("0) Shut down instance");
+            System.out.print("Choose option: ");
+
+            String input = scanner.nextLine();
+            switch (input){
+                case "1":
+                    downloader.addPropertyChangeListener(this);
+                    downloader.run();
+                    break;
+                case "0":
+                    udpService.interrupt();
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Wrong option\n");
             }
         }
     }

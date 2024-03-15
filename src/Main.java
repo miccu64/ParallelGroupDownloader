@@ -13,19 +13,10 @@ public class Main {
 
         int threadsCount = 3;
         CyclicBarrier cyclicBarrier = new CyclicBarrier(threadsCount);
-        List<Thread> threads = new ArrayList<>();
         for (int i = 0; i < threadsCount; i++){
-            Thread thread = new MainThread("230.1.1.1", 10100, cyclicBarrier);
+            String url = "file:/D:/Różne/adsdasd.jpg";
+            Thread thread = new MainThread("230.1.1.1", 10100, cyclicBarrier, url);
             thread.start();
-            threads.add(thread);
-        }
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
 
         System.out.println("All threads have completed.");

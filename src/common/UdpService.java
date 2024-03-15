@@ -14,12 +14,15 @@ public class UdpService extends Thread {
     private final byte[] buf = new byte[256];
     private final int port;
 
-    public UdpService(String multicastIp, int port) throws IOException {
+    public UdpService(String multicastIp, int port) throws DownloaderException {
         this.port = port;
-        this.group = InetAddress.getByName(multicastIp);
-
-        socket = new MulticastSocket(this.port);
-        socket.joinGroup(group);
+        try {
+            this.group = InetAddress.getByName(multicastIp);
+            socket = new MulticastSocket(this.port);
+            socket.joinGroup(group);
+        } catch (IOException e){
+            throw new DownloaderException(e, "Could not join to multicast: " + multicastIp + ":" + port);
+        }
     }
 
     public void run() {
@@ -30,7 +33,7 @@ public class UdpService extends Thread {
                 socket.receive(datagram);
 
                 Command receivedCommand = new Command(datagram);
-                System.out.println("Received: " + receivedCommand);
+                System.out.println("Received from " + datagram.getSocketAddress() + ": " + receivedCommand);
 
                 switch (receivedCommand.getType()) {
                     case FindOthers:

@@ -1,7 +1,9 @@
 package server;
 
-import common.DownloaderException;
+import common.DownloadStatusEnum;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.*;
 import java.net.*;
 import java.nio.channels.Channels;
@@ -11,15 +13,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static common.PrepareDownloadUtils.downloadPath;
 
-public class FileDownloader {
+public class FileDownloader implements Runnable {
+    private static final ConcurrentLinkedQueue<Path> filePaths = new ConcurrentLinkedQueue<>();
+
     private final int blockSize;
-    private final Path filePath;
-    private final String fileName;
-    private final URL url;
     private final long fileSizeInMB;
+    private final PropertyChangeSupport propertyChange;
+
+    private Path filePath;
+    private String fileName;
+    private URL url;
+    private DownloadStatusEnum downloadStatus;
+
+    public void setDownloadStatus(DownloadStatusEnum value) {
+        propertyChange.firePropertyChange("downloadStatus", this.downloadStatus, value);
+        this.downloadStatus = value;
+    }
 
     private int blockNumber = 0;
 
@@ -27,30 +41,27 @@ public class FileDownloader {
         return fileSizeInMB;
     }
 
-    public String getFileName() {
-        return fileName;
-    }
+    public FileDownloader(String url, int blockSizeInMB) {
+        propertyChange = new PropertyChangeSupport(this);
 
-    public FileDownloader(String url, int blockSizeInMB) throws DownloaderException {
-        URI uri;
         try {
-            uri = new URI(url);
+            URI uri = new URI(url);
             this.url = uri.toURL();
+            fileName = getFileNameFromUrl(uri);
+            filePath = Paths.get(String.valueOf(downloadPath), fileName);
         } catch (MalformedURLException | URISyntaxException e) {
-            throw new DownloaderException(e, "Malformed URL");
+            exitAfterDownloadError(e, "Malformed URL");
         }
 
         blockSize = blockSizeInMB * 1024 * 1024;
-        fileName = getFileNameFromUrl(uri);
+        fileSizeInMB = findFileSizeInMB();
 
-        filePath = Paths.get(String.valueOf(downloadPath), fileName);
-
-        this.fileSizeInMB = findFileSizeInMB();
+        downloadStatus = DownloadStatusEnum.Waiting;
     }
 
-    public void downloadWholeFile() throws DownloaderException {
+    public void run() {
         blockNumber = 0;
-        long transferredCount;
+        long transferredCount = 0;
 
         try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
             do {
@@ -59,13 +70,20 @@ public class FileDownloader {
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
+                    setDownloadStatus(DownloadStatusEnum.DownloadedPart);
                 } catch (SecurityException | IOException e) {
-                    throw new DownloaderException(e, "Cannot save to file: " + partFile.getAbsolutePath());
+                    exitAfterDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
                 }
             } while (transferredCount == blockSize);
+
+            setDownloadStatus(DownloadStatusEnum.Success);
         } catch (IOException e) {
-            throw new DownloaderException(e, "Cannot open given URL. Download aborted");
+            exitAfterDownloadError(e, "Cannot open given URL. Download aborted");
         }
+    }
+
+    public void addPropertyChangeListener(PropertyChangeListener pcl) {
+        propertyChange.addPropertyChangeListener(pcl);
     }
 
     public boolean joinDeleteFileParts() {
@@ -86,6 +104,23 @@ public class FileDownloader {
             }
         }
 
+        removeFileParts();
+
+        return true;
+    }
+
+    private void exitAfterDownloadError(Exception e, String message) {
+        setDownloadStatus(DownloadStatusEnum.Error);
+
+        System.out.println(message);
+        e.printStackTrace(System.out);
+
+        removeFileParts();
+
+        System.exit(1);
+    }
+
+    private void removeFileParts() {
         for (int i = 0; i < blockNumber; i++) {
             Path filePartPath = createFilePartPath(i);
             try {
@@ -93,17 +128,16 @@ public class FileDownloader {
             } catch (IOException ignored) {
             }
         }
-
-        return true;
     }
 
-    private String getFileNameFromUrl(URI uri){
+    private String getFileNameFromUrl(URI uri) {
         Path path;
         try {
             path = Paths.get(uri.getPath());
         } catch (Exception ignored) {
             path = Paths.get(uri);
         }
+
         return path.getFileName().toString();
     }
 
@@ -125,6 +159,7 @@ public class FileDownloader {
                 fileSize = (long) Math.ceil((double) fileSize / (double) (1024 * 1024));
             }
         } catch (IOException ignored) {
+            System.out.println("Could not determine file size");
         }
 
         return fileSize;
