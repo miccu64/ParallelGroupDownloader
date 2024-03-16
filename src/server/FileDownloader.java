@@ -1,6 +1,7 @@
 package server;
 
 import common.DownloadStatusEnum;
+import common.DownloaderException;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -13,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static common.PrepareDownloadUtils.downloadPath;
@@ -41,7 +41,7 @@ public class FileDownloader implements Runnable {
         return fileSizeInMB;
     }
 
-    public FileDownloader(String url, int blockSizeInMB) {
+    public FileDownloader(String url, int blockSizeInMB) throws DownloaderException {
         propertyChange = new PropertyChangeSupport(this);
 
         try {
@@ -50,7 +50,7 @@ public class FileDownloader implements Runnable {
             fileName = getFileNameFromUrl(uri);
             filePath = Paths.get(String.valueOf(downloadPath), fileName);
         } catch (MalformedURLException | URISyntaxException e) {
-            exitAfterDownloadError(e, "Malformed URL");
+            throw new DownloaderException(e, "Malformed URL");
         }
 
         blockSize = blockSizeInMB * 1024 * 1024;
@@ -72,13 +72,13 @@ public class FileDownloader implements Runnable {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
                     setDownloadStatus(DownloadStatusEnum.DownloadedPart);
                 } catch (SecurityException | IOException e) {
-                    exitAfterDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
+                    handleDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
                 }
             } while (transferredCount == blockSize);
 
             setDownloadStatus(DownloadStatusEnum.Success);
         } catch (IOException e) {
-            exitAfterDownloadError(e, "Cannot open given URL. Download aborted");
+            handleDownloadError(e, "Cannot open given URL. Download aborted");
         }
     }
 
@@ -109,18 +109,16 @@ public class FileDownloader implements Runnable {
         return true;
     }
 
-    private void exitAfterDownloadError(Exception e, String message) {
+    private void handleDownloadError(Exception e, String message) {
         setDownloadStatus(DownloadStatusEnum.Error);
 
         System.out.println(message);
         e.printStackTrace(System.out);
 
         removeFileParts();
-
-        System.exit(1);
     }
 
-    private void removeFileParts() {
+    public void removeFileParts() {
         for (int i = 0; i < blockNumber; i++) {
             Path filePartPath = createFilePartPath(i);
             try {

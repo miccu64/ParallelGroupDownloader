@@ -37,7 +37,7 @@ public class UdpService extends Thread {
 
                 switch (receivedCommand.getType()) {
                     case FindOthers:
-                        Command command = new Command(CommandType.ResponseToFindOthers, null);
+                        Command command = new Command(CommandType.ResponseToFindOthers);
                         send(command);
                         break;
                     case DownloadStart:

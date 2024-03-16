@@ -7,6 +7,9 @@ import server.FileDownloader;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,6 +19,7 @@ public class MainThread extends Thread implements PropertyChangeListener {
     private final CyclicBarrier cyclicBarrier;
     private final UdpService udpService;
     private FileDownloader downloader;
+    private List<Path> processedFiles = new ArrayList<>();
 
     public MainThread(String multicastIp, int port, CyclicBarrier cyclicBarrier, String url) throws DownloaderException {
         this.cyclicBarrier = cyclicBarrier;
@@ -23,7 +27,7 @@ public class MainThread extends Thread implements PropertyChangeListener {
         udpService = new UdpService(multicastIp, port);
         udpService.start();
 
-        if (url != null){
+        if (url != null) {
             downloader = new FileDownloader(url, 1);
         }
     }
@@ -32,7 +36,7 @@ public class MainThread extends Thread implements PropertyChangeListener {
         try {
             cyclicBarrier.await();
 
-            Command packet = new Command(CommandType.FindOthers, null);
+            Command packet = new Command(CommandType.FindOthers);
             udpService.send(packet);
 
             if (canTakeInput.compareAndSet(true, false)) {
@@ -47,25 +51,58 @@ public class MainThread extends Thread implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        DownloadStatusEnum status = ((DownloadStatusEnum) evt.getNewValue());
+        DownloadStatusEnum downloaderStatus = ((DownloadStatusEnum) evt.getNewValue());
+        Command command;
+        switch (downloaderStatus) {
+            case Error:
+                // TODO: error handle on all instances
+                command = new Command(CommandType.DownloadAbort);
+                break;
+            case DownloadedPart:
+                command = new Command(CommandType.GotNextFilePart);
+                // TODO: send info and init transfer
+                break;
+            case Success:
+                command = new Command(CommandType.GotNextFilePart);
+                // TODO: inform all about end
+                break;
+            default:
+                return;
+        }
+
+        udpService.send(command);
+        if (downloaderStatus == DownloadStatusEnum.Error) {
+            udpService.interrupt();
+            downloader.removeFileParts();
+
+            System.exit(1);
+        }
     }
 
     private void waitForUserInput() {
         Scanner scanner = new Scanner(System.in);
 
-        while (true) {
+        boolean loop = true;
+        while (loop) {
             System.out.println("1) Start downloading");
             System.out.println("0) Shut down instance");
             System.out.print("Choose option: ");
 
             String input = scanner.nextLine();
-            switch (input){
+            switch (input) {
                 case "1":
-                    downloader.addPropertyChangeListener(this);
-                    downloader.run();
+                    if (downloader == null) {
+                        System.out.println("No source URL was given when started program. Restart with provided URL");
+                    } else {
+                        downloader.addPropertyChangeListener(this);
+                        downloader.run();
+                        loop = false;
+                        System.out.println("Download started...");
+                    }
                     break;
                 case "0":
                     udpService.interrupt();
+
                     System.exit(0);
                     break;
                 default:
