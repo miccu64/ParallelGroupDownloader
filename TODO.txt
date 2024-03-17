@@ -1,3 +1,4 @@
 - wyłączanie obecnej instancji
 - wyłączenie wszystkich instancji na wszystkich PC
 - wyszukiwanie wspólnego socketu multicastu i oznajmienie go innym instancjom
+- uniemożliwienie dołączenia nowej instancji do multicastu, gdy już pobieranie rozpoczęło się (lub "dosłanie" brakującyh plików)

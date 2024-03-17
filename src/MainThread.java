@@ -8,18 +8,20 @@ import server.FileDownloader;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static common.FilePartUtils.*;
 
 public class MainThread extends Thread implements PropertyChangeListener {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
     private final CyclicBarrier cyclicBarrier;
     private final UdpService udpService;
     private FileDownloader downloader;
-    private List<Path> processedFiles = new ArrayList<>();
+    private final List<Path> processedFiles = new ArrayList<>();
+    private final List<Path> filesToProcess = new ArrayList<>();
 
     public MainThread(String multicastIp, int port, CyclicBarrier cyclicBarrier, String url) throws DownloaderException {
         this.cyclicBarrier = cyclicBarrier;
@@ -55,25 +57,45 @@ public class MainThread extends Thread implements PropertyChangeListener {
         Command command;
         switch (downloaderStatus) {
             case Error:
-                // TODO: error handle on all instances
                 command = new Command(CommandType.DownloadAbort);
+                udpService.send(command);
                 break;
             case DownloadedPart:
-                command = new Command(CommandType.GotNextFilePart);
-                // TODO: send info and init transfer
+                List<Path> newPaths = downloader.getFilePaths().stream()
+                        .filter(path -> !processedFiles.contains(path))
+                        .collect(Collectors.toList());
+                filesToProcess.addAll(newPaths);
+
+                for (Path path : newPaths) {
+                    String checksum = fileChecksum(path);
+                    HashMap<String, String> data = new HashMap<>();
+                    data.put("Checksum", checksum);
+                    data.put("FilePartName", path.getFileName().toString());
+
+                    command = new Command(CommandType.NextFilePart, data);
+                    udpService.send(command);
+                }
+                // TODO: init transfer
                 break;
             case Success:
-                command = new Command(CommandType.GotNextFilePart);
-                // TODO: inform all about end
+                HashMap<String, String> data = new HashMap<>();
+                int partsCount = processedFiles.size() + filesToProcess.size();
+                data.put("PartsCount", String.valueOf(partsCount));
+
+                command = new Command(CommandType.Success, data);
+                udpService.send(command);
                 break;
             default:
-                return;
+                throw new RuntimeException("Not handled downloader status: " + downloaderStatus);
         }
 
-        udpService.send(command);
         if (downloaderStatus == DownloadStatusEnum.Error) {
             udpService.interrupt();
-            downloader.removeFileParts();
+
+            LinkedList<Path> allFiles = new LinkedList<>();
+            allFiles.addAll(processedFiles);
+            allFiles.addAll(filesToProcess);
+            removeFileParts(allFiles);
 
             System.exit(1);
         }

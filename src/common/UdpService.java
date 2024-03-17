@@ -8,7 +8,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
-public class UdpService extends Thread {
+public class UdpService extends Thread implements IUdpService {
     private final InetAddress group;
     private final MulticastSocket socket;
     private final byte[] buf = new byte[256];

@@ -5,6 +5,6 @@ public enum CommandType {
     ResponseToFindOthers,
     DownloadStart,
     DownloadAbort,
-    GotNextFilePart,
-    PartIntegrityInfo
+    NextFilePart,
+    Success
 }

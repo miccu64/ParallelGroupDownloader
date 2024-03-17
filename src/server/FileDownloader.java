@@ -10,12 +10,13 @@ import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static common.FilePartUtils.removeFileParts;
 import static common.PrepareDownloadUtils.downloadPath;
 
 public class FileDownloader implements Runnable {
@@ -34,8 +35,6 @@ public class FileDownloader implements Runnable {
         propertyChange.firePropertyChange("downloadStatus", this.downloadStatus, value);
         this.downloadStatus = value;
     }
-
-    private int blockNumber = 0;
 
     public long getFileSizeInMB() {
         return fileSizeInMB;
@@ -60,16 +59,18 @@ public class FileDownloader implements Runnable {
     }
 
     public void run() {
-        blockNumber = 0;
+        int blockNumber = 0;
         long transferredCount = 0;
 
         try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
             do {
-                File partFile = createFilePartPath(blockNumber).toFile();
+                Path filePartPath = createFilePartPath(blockNumber);
+                File partFile = filePartPath.toFile();
                 blockNumber++;
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
+                    filePaths.add(filePartPath);
                     setDownloadStatus(DownloadStatusEnum.DownloadedPart);
                 } catch (SecurityException | IOException e) {
                     handleDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
@@ -86,46 +87,17 @@ public class FileDownloader implements Runnable {
         propertyChange.addPropertyChangeListener(pcl);
     }
 
-    public boolean joinDeleteFileParts() {
-        try {
-            Files.deleteIfExists(filePath);
-            Files.createFile(filePath);
-        } catch (IOException e) {
-            return handleException(e, "Cannot create result file: " + filePath);
-        }
-
-        for (int i = 0; i < blockNumber; i++) {
-            Path filePartPath = createFilePartPath(i);
-
-            try (OutputStream out = Files.newOutputStream(filePath, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
-                Files.copy(filePartPath, out);
-            } catch (IOException e) {
-                return handleException(e, "Error while joining parts of file");
-            }
-        }
-
-        removeFileParts();
-
-        return true;
-    }
-
     private void handleDownloadError(Exception e, String message) {
         setDownloadStatus(DownloadStatusEnum.Error);
 
         System.out.println(message);
         e.printStackTrace(System.out);
 
-        removeFileParts();
+        removeFileParts(getFilePaths());
     }
 
-    public void removeFileParts() {
-        for (int i = 0; i < blockNumber; i++) {
-            Path filePartPath = createFilePartPath(i);
-            try {
-                Files.deleteIfExists(filePartPath);
-            } catch (IOException ignored) {
-            }
-        }
+    public List<Path> getFilePaths() {
+        return Arrays.asList(filePaths.toArray(new Path[0]));
     }
 
     private String getFileNameFromUrl(URI uri) {
@@ -165,11 +137,5 @@ public class FileDownloader implements Runnable {
 
     private Path createFilePartPath(int partNumber) {
         return Paths.get(filePath + ".part" + partNumber);
-    }
-
-    private boolean handleException(Exception e, String message) {
-        System.out.println(message);
-        e.printStackTrace(System.out);
-        return false;
     }
 }
