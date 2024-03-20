@@ -7,12 +7,14 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class UdpService extends Thread implements IUdpService {
+public abstract class UdpService implements Runnable, AutoCloseable {
+    protected final MulticastSocket socket;
     private final InetAddress group;
-    private final MulticastSocket socket;
     private final byte[] buf = new byte[256];
     private final int port;
+    private final AtomicBoolean loop = new AtomicBoolean(true);
 
     public UdpService(String multicastIp, int port) throws DownloaderException {
         this.port = port;
@@ -20,14 +22,13 @@ public class UdpService extends Thread implements IUdpService {
             this.group = InetAddress.getByName(multicastIp);
             socket = new MulticastSocket(this.port);
             socket.joinGroup(group);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new DownloaderException(e, "Could not join to multicast: " + multicastIp + ":" + port);
         }
     }
 
     public void run() {
-        boolean loop = true;
-        while (loop) {
+        while (loop.get()) {
             DatagramPacket datagram = new DatagramPacket(buf, buf.length);
             try {
                 socket.receive(datagram);
@@ -35,15 +36,12 @@ public class UdpService extends Thread implements IUdpService {
                 Command receivedCommand = new Command(datagram);
                 System.out.println("Received from " + datagram.getSocketAddress() + ": " + receivedCommand);
 
-                switch (receivedCommand.getType()) {
-                    case FindOthers:
-                        Command command = new Command(CommandType.ResponseToFindOthers);
-                        send(command);
-                        break;
-                    case DownloadStart:
-                        loop = false;
-                        break;
-                }
+                new Thread(() -> {
+                    boolean shouldLoop = actionsOnCommandReceive(receivedCommand);
+                    if (!shouldLoop) {
+                        close();
+                    }
+                }).start();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             } catch (DownloaderException ignored) {
@@ -59,5 +57,20 @@ public class UdpService extends Thread implements IUdpService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void close() {
+        loop.set(false);
+        socket.close();
+    }
+
+    protected boolean actionsOnCommandReceive(Command receivedCommand) {
+        if (receivedCommand.getType() == CommandType.FindOthers) {
+            Command command = new Command(CommandType.ResponseToFindOthers);
+            send(command);
+        }
+
+        return true;
     }
 }

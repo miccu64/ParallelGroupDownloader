@@ -1,9 +1,12 @@
+import client.ClientUdpService;
+import com.sun.security.ntlm.Client;
 import common.DownloadStatusEnum;
 import common.DownloaderException;
 import common.UdpService;
 import common.packet.Command;
 import common.packet.CommandType;
 import server.FileDownloader;
+import server.ServerUdpService;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -15,23 +18,25 @@ import java.util.stream.Collectors;
 
 import static common.FilePartUtils.*;
 
-public class MainThread extends Thread implements PropertyChangeListener {
+public class MainThread extends Thread {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
     private final CyclicBarrier cyclicBarrier;
-    private final UdpService udpService;
-    private FileDownloader downloader;
-    private final List<Path> processedFiles = new ArrayList<>();
-    private final List<Path> filesToProcess = new ArrayList<>();
+    private final String multicastIp;
+    private final int port;
 
-    public MainThread(String multicastIp, int port, CyclicBarrier cyclicBarrier, String url) throws DownloaderException {
+    private UdpService udpService;
+    private Thread udpServiceThread;
+    private String url;
+
+    public MainThread(String multicastIp, int port, String url, CyclicBarrier cyclicBarrier) throws DownloaderException {
+        this.multicastIp = multicastIp;
+        this.port = port;
+        this.url = url;
         this.cyclicBarrier = cyclicBarrier;
 
-        udpService = new UdpService(multicastIp, port);
-        udpService.start();
-
-        if (url != null) {
-            downloader = new FileDownloader(url, 1);
-        }
+        udpService = new ClientUdpService(multicastIp, port);
+        udpServiceThread = new Thread(udpService);
+        udpServiceThread.start();
     }
 
     public void run() {
@@ -51,56 +56,6 @@ public class MainThread extends Thread implements PropertyChangeListener {
         }
     }
 
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        DownloadStatusEnum downloaderStatus = ((DownloadStatusEnum) evt.getNewValue());
-        Command command;
-        switch (downloaderStatus) {
-            case Error:
-                command = new Command(CommandType.DownloadAbort);
-                udpService.send(command);
-                break;
-            case DownloadedPart:
-                List<Path> newPaths = downloader.getFilePaths().stream()
-                        .filter(path -> !processedFiles.contains(path))
-                        .collect(Collectors.toList());
-                filesToProcess.addAll(newPaths);
-
-                for (Path path : newPaths) {
-                    String checksum = fileChecksum(path);
-                    HashMap<String, String> data = new HashMap<>();
-                    data.put("Checksum", checksum);
-                    data.put("FilePartName", path.getFileName().toString());
-
-                    command = new Command(CommandType.NextFilePart, data);
-                    udpService.send(command);
-                }
-                // TODO: init transfer
-                break;
-            case Success:
-                HashMap<String, String> data = new HashMap<>();
-                int partsCount = processedFiles.size() + filesToProcess.size();
-                data.put("PartsCount", String.valueOf(partsCount));
-
-                command = new Command(CommandType.Success, data);
-                udpService.send(command);
-                break;
-            default:
-                throw new RuntimeException("Not handled downloader status: " + downloaderStatus);
-        }
-
-        if (downloaderStatus == DownloadStatusEnum.Error) {
-            udpService.interrupt();
-
-            LinkedList<Path> allFiles = new LinkedList<>();
-            allFiles.addAll(processedFiles);
-            allFiles.addAll(filesToProcess);
-            removeFileParts(allFiles);
-
-            System.exit(1);
-        }
-    }
-
     private void waitForUserInput() {
         Scanner scanner = new Scanner(System.in);
 
@@ -113,17 +68,26 @@ public class MainThread extends Thread implements PropertyChangeListener {
             String input = scanner.nextLine();
             switch (input) {
                 case "1":
-                    if (downloader == null) {
+                    if (url == null) {
                         System.out.println("No source URL was given when started program. Restart with provided URL");
                     } else {
-                        downloader.addPropertyChangeListener(this);
-                        downloader.run();
+                        udpServiceThread.interrupt();
+                        udpService.close();
+
+                        try {
+                            udpService = new ServerUdpService(multicastIp, port, url);
+                            udpServiceThread = new Thread(udpService);
+                            udpServiceThread.start();
+                            System.out.println("Download started...");
+                        } catch (DownloaderException ignored) {
+                            System.exit(1);
+                        }
+
                         loop = false;
-                        System.out.println("Download started...");
                     }
                     break;
                 case "0":
-                    udpService.interrupt();
+                    udpServiceThread.interrupt();
 
                     System.exit(0);
                     break;

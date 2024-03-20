@@ -15,7 +15,7 @@ public class Main {
         CyclicBarrier cyclicBarrier = new CyclicBarrier(threadsCount);
         for (int i = 0; i < threadsCount; i++){
             String url = "file:/home/lubuntu/Desktop/someFile.txt";
-            Thread thread = new MainThread("230.1.1.1", 10100, cyclicBarrier, url);
+            Thread thread = new MainThread("230.1.1.1", 10100, url, cyclicBarrier);
             thread.start();
         }
 
