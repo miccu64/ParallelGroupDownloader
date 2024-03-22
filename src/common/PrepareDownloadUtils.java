@@ -1,9 +1,12 @@
 package common;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,12 +23,14 @@ public class PrepareDownloadUtils {
         return checkFreeSpace(fileSizeInBytes);
     }
 
-    public static boolean isValidUrl(String urlToCheck) {
+    public static void checkIsValidUrl(String urlToCheck) throws DownloaderException {
         try {
-            new URL(urlToCheck).toURI();
-            return true;
-        } catch (Exception ignored) {
-            return false;
+            URL url = new URL(urlToCheck);
+            url.toURI();
+            try (InputStream inputStream = url.openStream();
+                 ReadableByteChannel ignored = Channels.newChannel(inputStream)){}
+        } catch (Exception e) {
+            throw new DownloaderException(e, "Malformed URL");
         }
     }
 

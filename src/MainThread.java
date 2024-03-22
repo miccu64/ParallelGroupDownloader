@@ -1,22 +1,15 @@
 import client.ClientUdpService;
-import com.sun.security.ntlm.Client;
-import common.DownloadStatusEnum;
 import common.DownloaderException;
 import common.UdpService;
 import common.packet.Command;
 import common.packet.CommandType;
-import server.FileDownloader;
 import server.ServerUdpService;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
-import static common.FilePartUtils.*;
+import static common.PrepareDownloadUtils.checkIsValidUrl;
 
 public class MainThread extends Thread {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
@@ -33,6 +26,8 @@ public class MainThread extends Thread {
         this.port = port;
         this.url = url;
         this.cyclicBarrier = cyclicBarrier;
+
+        checkIsValidUrl(url);
 
         udpService = new ClientUdpService(multicastIp, port);
         udpServiceThread = new Thread(udpService);
@@ -71,6 +66,10 @@ public class MainThread extends Thread {
                     if (url == null) {
                         System.out.println("No source URL was given when started program. Restart with provided URL");
                     } else {
+                        Map<String, String> data = new HashMap<>();
+                        data.put("Url", url);
+                        Command command = new Command(CommandType.DownloadStart, data);
+                        udpService.send(command);
                         udpServiceThread.interrupt();
                         udpService.close();
 
@@ -88,6 +87,7 @@ public class MainThread extends Thread {
                     break;
                 case "0":
                     udpServiceThread.interrupt();
+                    udpService.close();
 
                     System.exit(0);
                     break;
