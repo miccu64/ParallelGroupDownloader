@@ -1,7 +1,6 @@
 package common;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -27,8 +26,7 @@ public class PrepareDownloadUtils {
         try {
             URL url = new URL(urlToCheck);
             url.toURI();
-            try (InputStream inputStream = url.openStream();
-                 ReadableByteChannel ignored = Channels.newChannel(inputStream)){}
+            try (ReadableByteChannel ignored = Channels.newChannel(url.openStream())){}
         } catch (Exception e) {
             throw new DownloaderException(e, "Malformed URL");
         }

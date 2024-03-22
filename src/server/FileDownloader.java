@@ -62,8 +62,7 @@ public class FileDownloader implements Runnable {
         int blockNumber = 0;
         long transferredCount = 0;
 
-        try (InputStream inputStream = this.url.openStream();
-             ReadableByteChannel channel = Channels.newChannel(inputStream)) {
+        try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
             do {
                 Path filePartPath = createFilePartPath(blockNumber);
                 File partFile = filePartPath.toFile();

@@ -7,7 +7,7 @@ public class DownloaderException extends Exception {
         String exceptionName = e.getClass().getCanonicalName();
         message = exceptionName + ": " + message;
 
-        System.out.println(message);
-        e.printStackTrace(System.out);
+        System.err.println(message);
+        e.printStackTrace(System.err);
     }
 }
