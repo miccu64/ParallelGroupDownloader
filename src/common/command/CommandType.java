@@ -1,4 +1,4 @@
-package common.packet;
+package common.command;
 
 public enum CommandType {
     FindOthers,

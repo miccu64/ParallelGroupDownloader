@@ -1,4 +1,4 @@
-package common;
+package common.utils;
 
 import java.io.IOException;
 import java.io.InputStream;

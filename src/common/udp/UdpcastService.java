@@ -1,4 +1,4 @@
-package common;
+package common.udp;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,11 +6,11 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Map;
 
-public abstract class UdpcastWrapper implements Runnable, AutoCloseable  {
+public abstract class UdpcastService implements Runnable, AutoCloseable  {
     private final ProcessBuilder processBuilder;
     private Process process;
 
-    protected UdpcastWrapper(String programName, Map<String, String> params){
+    protected UdpcastService(String programName, Map<String, String> params){
         StringBuilder command = new StringBuilder(programName);
         for (Map.Entry<String, String> entry : params.entrySet()) {
             command.append(" --").append(entry.getKey());

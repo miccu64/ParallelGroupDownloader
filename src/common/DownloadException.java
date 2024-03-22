@@ -1,7 +1,7 @@
 package common;
 
-public class DownloaderException extends Exception {
-    public DownloaderException(Exception e, String message) {
+public class DownloadException extends Exception {
+    public DownloadException(Exception e, String message) {
         super(message);
 
         String exceptionName = e.getClass().getCanonicalName();

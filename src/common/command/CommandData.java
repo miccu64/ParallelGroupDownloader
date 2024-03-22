@@ -1,6 +1,6 @@
-package common.packet;
+package common.command;
 
-import common.DownloaderException;
+import common.DownloadException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,9 +26,9 @@ public class CommandData {
         }
     }
 
-    public CommandData(String dataString) throws DownloaderException {
+    public CommandData(String dataString) throws DownloadException {
         if (!dataString.startsWith(separator) || !dataString.endsWith(separator)) {
-            throw new DownloaderException(new Exception(), "Wrong message data");
+            throw new DownloadException(new Exception(), "Wrong message data");
         }
 
         dataString = dataString.substring(0, dataString.length() - separator.length()).substring(separator.length());

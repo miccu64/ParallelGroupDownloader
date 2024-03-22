@@ -1,6 +1,6 @@
-package common.packet;
+package common.command;
 
-import common.DownloaderException;
+import common.DownloadException;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -21,7 +21,7 @@ public class Command {
         this.data = new CommandData(type, data);
     }
 
-    public Command(DatagramPacket packet) throws DownloaderException {
+    public Command(DatagramPacket packet) throws DownloadException {
         String message = new String(packet.getData(), 0, packet.getLength());
         data = new CommandData(message);
     }

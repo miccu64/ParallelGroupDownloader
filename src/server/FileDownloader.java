@@ -1,7 +1,7 @@
 package server;
 
 import common.DownloadStatusEnum;
-import common.DownloaderException;
+import common.DownloadException;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static common.FilePartUtils.removeFileParts;
-import static common.PrepareDownloadUtils.downloadPath;
+import static common.utils.FilePartUtils.removeFileParts;
+import static common.utils.PrepareDownloadUtils.downloadPath;
 
 public class FileDownloader implements Runnable {
     private static final ConcurrentLinkedQueue<Path> filePaths = new ConcurrentLinkedQueue<>();
@@ -40,7 +40,7 @@ public class FileDownloader implements Runnable {
         return fileSizeInMB;
     }
 
-    public FileDownloader(String url, int blockSizeInMB) throws DownloaderException {
+    public FileDownloader(String url, int blockSizeInMB) throws DownloadException {
         propertyChange = new PropertyChangeSupport(this);
 
         try {
@@ -49,7 +49,7 @@ public class FileDownloader implements Runnable {
             fileName = getFileNameFromUrl(uri);
             filePath = Paths.get(String.valueOf(downloadPath), fileName);
         } catch (MalformedURLException | URISyntaxException e) {
-            throw new DownloaderException(e, "Malformed URL");
+            throw new DownloadException(e, "Malformed URL");
         }
 
         blockSize = blockSizeInMB * 1024 * 1024;

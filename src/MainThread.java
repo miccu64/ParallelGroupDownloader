@@ -1,15 +1,15 @@
-import client.ClientUdpService;
-import common.DownloaderException;
-import common.UdpService;
-import common.packet.Command;
-import common.packet.CommandType;
-import server.ServerUdpService;
+import client.udp.ClientUdpSocketService;
+import common.DownloadException;
+import common.udp.UdpSocketService;
+import common.command.Command;
+import common.command.CommandType;
+import server.udp.ServerUdpSocketService;
 
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static common.PrepareDownloadUtils.checkIsValidUrl;
+import static common.utils.PrepareDownloadUtils.checkIsValidUrl;
 
 public class MainThread extends Thread {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
@@ -17,11 +17,11 @@ public class MainThread extends Thread {
     private final String multicastIp;
     private final int port;
 
-    private UdpService udpService;
+    private UdpSocketService udpSocketService;
     private Thread udpServiceThread;
     private String url;
 
-    public MainThread(String multicastIp, int port, String url, CyclicBarrier cyclicBarrier) throws DownloaderException {
+    public MainThread(String multicastIp, int port, String url, CyclicBarrier cyclicBarrier) throws DownloadException {
         this.multicastIp = multicastIp;
         this.port = port;
         this.url = url;
@@ -29,8 +29,8 @@ public class MainThread extends Thread {
 
         checkIsValidUrl(url);
 
-        udpService = new ClientUdpService(multicastIp, port);
-        udpServiceThread = new Thread(udpService);
+        udpSocketService = new ClientUdpSocketService(multicastIp, port);
+        udpServiceThread = new Thread(udpSocketService);
         udpServiceThread.start();
     }
 
@@ -39,7 +39,7 @@ public class MainThread extends Thread {
             cyclicBarrier.await();
 
             Command packet = new Command(CommandType.FindOthers);
-            udpService.send(packet);
+            udpSocketService.send(packet);
 
             if (canTakeInput.compareAndSet(true, false)) {
                 waitForUserInput();
@@ -69,16 +69,16 @@ public class MainThread extends Thread {
                         Map<String, String> data = new HashMap<>();
                         data.put("Url", url);
                         Command command = new Command(CommandType.DownloadStart, data);
-                        udpService.send(command);
+                        udpSocketService.send(command);
                         udpServiceThread.interrupt();
-                        udpService.close();
+                        udpSocketService.close();
 
                         try {
-                            udpService = new ServerUdpService(multicastIp, port, url);
-                            udpServiceThread = new Thread(udpService);
+                            udpSocketService = new ServerUdpSocketService(multicastIp, port, url);
+                            udpServiceThread = new Thread(udpSocketService);
                             udpServiceThread.start();
                             System.out.println("Download started...");
-                        } catch (DownloaderException ignored) {
+                        } catch (DownloadException ignored) {
                             System.exit(1);
                         }
 
@@ -87,7 +87,7 @@ public class MainThread extends Thread {
                     break;
                 case "0":
                     udpServiceThread.interrupt();
-                    udpService.close();
+                    udpSocketService.close();
 
                     System.exit(0);
                     break;

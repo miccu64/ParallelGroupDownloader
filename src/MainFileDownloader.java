@@ -1,5 +1,5 @@
-import common.DownloaderException;
-import common.PrepareDownloadUtils;
+import common.DownloadException;
+import common.utils.PrepareDownloadUtils;
 import server.FileDownloader;
 
 import java.net.MalformedURLException;
@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MainFileDownloader {
-    public static void main(String[] args) throws DownloaderException, MalformedURLException {
+    public static void main(String[] args) throws DownloadException, MalformedURLException {
         PrepareDownloadUtils.initProgram();
         PrepareDownloadUtils.beforeDownloadCheck(1111);
 

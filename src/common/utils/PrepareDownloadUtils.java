@@ -1,4 +1,6 @@
-package common;
+package common.utils;
+
+import common.DownloadException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -14,25 +16,25 @@ import java.nio.file.Paths;
 public class PrepareDownloadUtils {
     public final static Path downloadPath = Paths.get("downloads");
 
-    public static void initProgram() throws DownloaderException {
+    public static void initProgram() throws DownloadException {
         createDownloadDirectory();
     }
 
-    public static boolean beforeDownloadCheck(long fileSizeInBytes) throws DownloaderException {
+    public static boolean beforeDownloadCheck(long fileSizeInBytes) throws DownloadException {
         return checkFreeSpace(fileSizeInBytes);
     }
 
-    public static void checkIsValidUrl(String urlToCheck) throws DownloaderException {
+    public static void checkIsValidUrl(String urlToCheck) throws DownloadException {
         try {
             URL url = new URL(urlToCheck);
             url.toURI();
             try (ReadableByteChannel ignored = Channels.newChannel(url.openStream())){}
         } catch (Exception e) {
-            throw new DownloaderException(e, "Malformed URL");
+            throw new DownloadException(e, "Malformed URL");
         }
     }
 
-    private static boolean checkFreeSpace(long fileSizeInBytes) throws DownloaderException {
+    private static boolean checkFreeSpace(long fileSizeInBytes) throws DownloadException {
         if (fileSizeInBytes < 1) {
             return true;
         }
@@ -42,15 +44,15 @@ public class PrepareDownloadUtils {
             FileStore store = Files.getFileStore(Paths.get(location));
             return store.getUsableSpace() > fileSizeInBytes * 2;
         } catch (IOException | URISyntaxException e) {
-            throw new DownloaderException(e, "Cannot check free space");
+            throw new DownloadException(e, "Cannot check free space");
         }
     }
 
-    private static void createDownloadDirectory() throws DownloaderException {
+    private static void createDownloadDirectory() throws DownloadException {
         try {
             Files.createDirectories(downloadPath);
         } catch (IOException e) {
-            throw new DownloaderException(e, "Could not create download directory");
+            throw new DownloadException(e, "Could not create download directory");
         }
     }
 }

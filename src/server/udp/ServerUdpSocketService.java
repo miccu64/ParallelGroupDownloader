@@ -1,10 +1,11 @@
-package server;
+package server.udp;
 
 import common.DownloadStatusEnum;
-import common.DownloaderException;
-import common.UdpService;
-import common.packet.Command;
-import common.packet.CommandType;
+import common.DownloadException;
+import common.udp.UdpSocketService;
+import common.command.Command;
+import common.command.CommandType;
+import server.FileDownloader;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -15,16 +16,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static common.FilePartUtils.fileChecksum;
-import static common.FilePartUtils.removeFileParts;
+import static common.utils.FilePartUtils.fileChecksum;
+import static common.utils.FilePartUtils.removeFileParts;
 
-public class ServerUdpService extends UdpService implements PropertyChangeListener {
+public class ServerUdpSocketService extends UdpSocketService implements PropertyChangeListener {
     private final FileDownloader fileDownloader;
 
     private final List<Path> processedFiles = new ArrayList<>();
     private final List<Path> filesToProcess = new ArrayList<>();
 
-    public ServerUdpService(String multicastIp, int port, String url) throws DownloaderException {
+    public ServerUdpSocketService(String multicastIp, int port, String url) throws DownloadException {
         super(multicastIp, port);
 
         fileDownloader = new FileDownloader(url, 1);

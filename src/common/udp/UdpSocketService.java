@@ -1,7 +1,8 @@
-package common;
+package common.udp;
 
-import common.packet.Command;
-import common.packet.CommandType;
+import common.DownloadException;
+import common.command.Command;
+import common.command.CommandType;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -9,21 +10,21 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class UdpService implements Runnable, AutoCloseable {
+public abstract class UdpSocketService implements Runnable, AutoCloseable {
     protected final MulticastSocket socket;
     private final InetAddress group;
     private final byte[] buf = new byte[256];
     private final int port;
     private final AtomicBoolean loop = new AtomicBoolean(true);
 
-    public UdpService(String multicastIp, int port) throws DownloaderException {
+    public UdpSocketService(String multicastIp, int port) throws DownloadException {
         this.port = port;
         try {
             this.group = InetAddress.getByName(multicastIp);
             socket = new MulticastSocket(this.port);
             socket.joinGroup(group);
         } catch (IOException e) {
-            throw new DownloaderException(e, "Could not join to multicast: " + multicastIp + ":" + port);
+            throw new DownloadException(e, "Could not join to multicast: " + multicastIp + ":" + port);
         }
     }
 
@@ -44,7 +45,7 @@ public abstract class UdpService implements Runnable, AutoCloseable {
                 }).start();
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            } catch (DownloaderException ignored) {
+            } catch (DownloadException ignored) {
             }
         }
     }

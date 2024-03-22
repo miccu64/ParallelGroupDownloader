@@ -1,11 +1,11 @@
-package server;
+package server.udp;
 
-import common.UdpcastWrapper;
+import common.udp.UdpcastService;
 
 import java.util.HashMap;
 
-public class ServerUdpcastWrapper extends UdpcastWrapper {
-    public ServerUdpcastWrapper(int port, String file){
+public class ServerUdpcastService extends UdpcastService {
+    public ServerUdpcastService(int port, String file){
         super("udp-sender", new HashMap<String, String>() {{
             put("nokbd", "");
             put("max-wait", "10");

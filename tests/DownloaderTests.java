@@ -1,5 +1,5 @@
-import common.DownloaderException;
-import common.PrepareDownloadUtils;
+import common.DownloadException;
+import common.utils.PrepareDownloadUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import server.FileDownloader;
@@ -17,7 +17,7 @@ import java.util.Random;
 
 public class DownloaderTests {
     @Test
-    public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException, DownloaderException {
+    public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException, DownloadException {
         String name = "testOriginalAndDownloadedFilesChecksums";
         String destinationDirectoryName = String.valueOf(PrepareDownloadUtils.downloadPath);
         Path testFilePath = Paths.get(destinationDirectoryName, name);

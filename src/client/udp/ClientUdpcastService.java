@@ -1,11 +1,11 @@
-package client;
+package client.udp;
 
-import common.UdpcastWrapper;
+import common.udp.UdpcastService;
 
 import java.util.HashMap;
 
-public class ClientUdpcastWrapper extends UdpcastWrapper {
-    public ClientUdpcastWrapper(int port){
+public class ClientUdpcastService extends UdpcastService {
+    public ClientUdpcastService(int port){
         super("udp-receiver", new HashMap<String, String>() {{
             put("nokbd", "");
             put("start-timeout", "3");
