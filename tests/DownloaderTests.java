@@ -19,7 +19,7 @@ public class DownloaderTests {
     @Test
     public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException, DownloadException {
         String name = "testOriginalAndDownloadedFilesChecksums";
-        String destinationDirectoryName = String.valueOf(PrepareDownloadUtils.downloadPath);
+        String destinationDirectoryName = String.valueOf(PrepareDownloadUtils.serverDownloadPath);
         Path testFilePath = Paths.get(destinationDirectoryName, name);
         URL url = testFilePath.toUri().toURL();
         FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
@@ -33,7 +33,7 @@ public class DownloaderTests {
             Assertions.assertTrue(fileDownloader.joinDeleteFileParts());
 
             byte[] originalChecksum = fileChecksum(testFilePath);
-            byte[] downloadedChecksum = fileChecksum(PrepareDownloadUtils.downloadPath);
+            byte[] downloadedChecksum = fileChecksum(PrepareDownloadUtils.serverDownloadPath);
 
             Assertions.assertArrayEquals(originalChecksum, downloadedChecksum);
         } finally {

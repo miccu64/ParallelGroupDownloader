@@ -1,4 +1,5 @@
-downloads/
+downloadsServer/
+downloadsClient/
 
 ### IntelliJ IDEA ###
 out/

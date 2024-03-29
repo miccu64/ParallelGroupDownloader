@@ -60,7 +60,13 @@ public class MainThread extends Thread {
             System.out.println("0) Shut down instance");
             System.out.print("Choose option: ");
 
-            String input = scanner.nextLine();
+            String input;
+            try {
+                input = scanner.nextLine();
+            } catch (Exception ignored) {
+                return;
+            }
+
             switch (input) {
                 case "1":
                     if (url == null) {

@@ -14,10 +14,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class PrepareDownloadUtils {
-    public final static Path downloadPath = Paths.get("downloads");
+    public final static Path serverDownloadPath = Paths.get("downloadsServer");
+    public final static Path clientDownloadPath = Paths.get("downloadsClient");
 
     public static void initProgram() throws DownloadException {
-        createDownloadDirectory();
+        createDownloadDirectories();
     }
 
     public static boolean beforeDownloadCheck(long fileSizeInBytes) throws DownloadException {
@@ -28,7 +29,8 @@ public class PrepareDownloadUtils {
         try {
             URL url = new URL(urlToCheck);
             url.toURI();
-            try (ReadableByteChannel ignored = Channels.newChannel(url.openStream())){}
+            try (ReadableByteChannel ignored = Channels.newChannel(url.openStream())) {
+            }
         } catch (Exception e) {
             throw new DownloadException(e, "Malformed URL");
         }
@@ -48,11 +50,12 @@ public class PrepareDownloadUtils {
         }
     }
 
-    private static void createDownloadDirectory() throws DownloadException {
+    private static void createDownloadDirectories() throws DownloadException {
         try {
-            Files.createDirectories(downloadPath);
+            Files.createDirectories(serverDownloadPath);
+            Files.createDirectories(clientDownloadPath);
         } catch (IOException e) {
-            throw new DownloadException(e, "Could not create download directory");
+            throw new DownloadException(e, "Could not create download directories");
         }
     }
 }

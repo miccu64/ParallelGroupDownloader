@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static common.utils.FilePartUtils.removeFileParts;
-import static common.utils.PrepareDownloadUtils.downloadPath;
+import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
 public class FileDownloader implements Runnable {
-    private static final ConcurrentLinkedQueue<Path> filePaths = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Path> filePaths = new ConcurrentLinkedQueue<>();
 
     private final int blockSize;
     private final long fileSizeInMB;
@@ -31,7 +31,7 @@ public class FileDownloader implements Runnable {
     private URL url;
     private DownloadStatusEnum downloadStatus;
 
-    public void setDownloadStatus(DownloadStatusEnum value) {
+    private void setDownloadStatus(DownloadStatusEnum value) {
         propertyChange.firePropertyChange("downloadStatus", this.downloadStatus, value);
         this.downloadStatus = value;
     }
@@ -47,7 +47,7 @@ public class FileDownloader implements Runnable {
             URI uri = new URI(url);
             this.url = uri.toURL();
             fileName = getFileNameFromUrl(uri);
-            filePath = Paths.get(String.valueOf(downloadPath), fileName);
+            filePath = Paths.get(String.valueOf(serverDownloadPath), fileName);
         } catch (MalformedURLException | URISyntaxException e) {
             throw new DownloadException(e, "Malformed URL");
         }
