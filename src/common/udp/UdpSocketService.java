@@ -12,10 +12,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class UdpSocketService implements Runnable, AutoCloseable {
     protected final MulticastSocket socket;
+
     private final InetAddress group;
     private final byte[] buf = new byte[256];
     private final int port;
     private final AtomicBoolean loop = new AtomicBoolean(true);
+    protected final FileInfoHolder fileInfoHolder = new FileInfoHolder();
 
     public UdpSocketService(String multicastIp, int port) throws DownloadException {
         this.port = port;

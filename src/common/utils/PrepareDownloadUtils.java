@@ -2,7 +2,9 @@ package common.utils;
 
 import common.DownloadException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -18,6 +20,7 @@ public class PrepareDownloadUtils {
     public final static Path clientDownloadPath = Paths.get("downloadsClient");
 
     public static void initProgram() throws DownloadException {
+        checkUdpcastPacketPresence();
         createDownloadDirectories();
     }
 
@@ -33,6 +36,22 @@ public class PrepareDownloadUtils {
             }
         } catch (Exception e) {
             throw new DownloadException(e, "Malformed URL");
+        }
+    }
+
+    private static void checkUdpcastPacketPresence() throws DownloadException {
+        try {
+            // TODO: "/bin/bash", "-c" - should be there?
+            new ProcessBuilder()
+                    .command("udp-receiver", "--license")
+                    .start()
+                    .destroy();
+            new ProcessBuilder()
+                    .command("udp-sender", "--license")
+                    .start()
+                    .destroy();
+        } catch (IOException e) {
+            throw new DownloadException(e, "Udpcast packet is not present. Please install it via terminal: 'sudo apt install udpcast'.");
         }
     }
 

@@ -1,10 +1,8 @@
 package server;
 
-import common.DownloadStatusEnum;
 import common.DownloadException;
+import common.udp.FileInfoHolder;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.io.*;
 import java.net.*;
 import java.nio.channels.Channels;
@@ -12,36 +10,27 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
 
 import static common.utils.FilePartUtils.removeFileParts;
 import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
-public class FileDownloader implements Runnable {
-    private final ConcurrentLinkedQueue<Path> filePaths = new ConcurrentLinkedQueue<>();
-
+public class FileDownloader implements Callable<Integer> {
     private final int blockSize;
     private final long fileSizeInMB;
-    private final PropertyChangeSupport propertyChange;
+    private  final FileInfoHolder fileInfoHolder;
 
     private Path filePath;
     private String fileName;
     private URL url;
-    private DownloadStatusEnum downloadStatus;
-
-    private void setDownloadStatus(DownloadStatusEnum value) {
-        propertyChange.firePropertyChange("downloadStatus", this.downloadStatus, value);
-        this.downloadStatus = value;
-    }
 
     public long getFileSizeInMB() {
         return fileSizeInMB;
     }
 
-    public FileDownloader(String url, int blockSizeInMB) throws DownloadException {
-        propertyChange = new PropertyChangeSupport(this);
+    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder) throws DownloadException {
+        this.fileInfoHolder = fileInfoHolder;
 
         try {
             URI uri = new URI(url);
@@ -54,13 +43,12 @@ public class FileDownloader implements Runnable {
 
         blockSize = blockSizeInMB * 1024 * 1024;
         fileSizeInMB = findFileSizeInMB();
-
-        downloadStatus = DownloadStatusEnum.Waiting;
     }
 
-    public void run() {
+    @Override
+    public Integer call() {
         int blockNumber = 0;
-        long transferredCount = 0;
+        long transferredCount;
 
         try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
             do {
@@ -70,34 +58,25 @@ public class FileDownloader implements Runnable {
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
-                    filePaths.add(filePartPath);
-                    setDownloadStatus(DownloadStatusEnum.DownloadedPart);
+                    fileInfoHolder.filesToProcess.add(filePartPath);
                 } catch (SecurityException | IOException e) {
-                    handleDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
+                    return handleDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
                 }
             } while (transferredCount == blockSize);
-
-            setDownloadStatus(DownloadStatusEnum.Success);
         } catch (IOException e) {
-            handleDownloadError(e, "Cannot open given URL. Download aborted");
+            return handleDownloadError(e, "Cannot open given URL. Download aborted");
         }
+
+        return 0;
     }
 
-    public void addPropertyChangeListener(PropertyChangeListener pcl) {
-        propertyChange.addPropertyChangeListener(pcl);
-    }
-
-    private void handleDownloadError(Exception e, String message) {
-        setDownloadStatus(DownloadStatusEnum.Error);
-
+    private int handleDownloadError(Exception e, String message) {
         System.out.println(message);
         e.printStackTrace(System.out);
 
-        removeFileParts(getFilePaths());
-    }
+        removeFileParts(new ArrayList<>(fileInfoHolder.filesToProcess));
 
-    public List<Path> getFilePaths() {
-        return Arrays.asList(filePaths.toArray(new Path[0]));
+        return 1;
     }
 
     private String getFileNameFromUrl(URI uri) {

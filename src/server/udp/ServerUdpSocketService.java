@@ -1,32 +1,31 @@
 package server.udp;
 
-import common.DownloadStatusEnum;
 import common.DownloadException;
-import common.udp.UdpSocketService;
 import common.command.Command;
 import common.command.CommandType;
+import common.udp.UdpSocketService;
 import server.FileDownloader;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import static common.utils.FilePartUtils.fileChecksum;
-
-public class ServerUdpSocketService extends UdpSocketService implements PropertyChangeListener {
-    private final FileDownloader fileDownloader;
-
-    private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<Path> filesToProcess = new ConcurrentLinkedQueue<>();
+public class ServerUdpSocketService extends UdpSocketService {
+    private final Future<Integer> fileDownloaderFuture;
+    private final Thread udpcastThread;
 
     public ServerUdpSocketService(String multicastIp, int port, String url) throws DownloadException {
         super(multicastIp, port);
 
-        fileDownloader = new FileDownloader(url, 1);
+        ServerUdpcastService serverUdpcastService = new ServerUdpcastService(5000, this.fileInfoHolder);
+        udpcastThread = new Thread(serverUdpcastService);
+        udpcastThread.start();
+
+        FileDownloader fileDownloader = new FileDownloader(url, 1, this.fileInfoHolder);
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        fileDownloaderFuture = executorService.submit(fileDownloader);
+        // TODO: listen to fileDownloaderFuture
     }
 
     @Override
@@ -39,22 +38,9 @@ public class ServerUdpSocketService extends UdpSocketService implements Property
     }
 
     @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        DownloadStatusEnum downloaderStatus = ((DownloadStatusEnum) evt.getNewValue());
-        switch (downloaderStatus) {
-            case Error:
-                handleDownloaderError();
-                return;
-            case DownloadedPart:
-                handleDownloaderNewFileParts();
-                // TODO: init transfer
-                break;
-            case Success:
-                handleDownloaderSuccess();
-                break;
-            default:
-                throw new RuntimeException("Not handled downloader status: " + downloaderStatus);
-        }
+    public void close() {
+        super.close();
+        udpcastThread.interrupt();
     }
 
     private void handleDownloaderError() {
@@ -67,8 +53,8 @@ public class ServerUdpSocketService extends UdpSocketService implements Property
 
     private void handleDownloaderSuccess() {
         HashMap<String, String> data = new HashMap<>();
-        // TODO: possible race
-        int partsCount = processedFiles.size() + filesToProcess.size();
+        // TODO: give proper value
+        int partsCount = 1;
         data.put("PartsCount", String.valueOf(partsCount));
 
         Command command = new Command(CommandType.Success, data);
@@ -76,19 +62,14 @@ public class ServerUdpSocketService extends UdpSocketService implements Property
     }
 
     private void handleDownloaderNewFileParts() {
-        List<Path> newPaths = fileDownloader.getFilePaths().stream()
-                .filter(path -> !processedFiles.contains(path))
-                .collect(Collectors.toList());
-        filesToProcess.addAll(newPaths);
-
-        for (Path path : newPaths) {
-            String checksum = fileChecksum(path);
-            HashMap<String, String> data = new HashMap<>();
-            data.put("Checksum", checksum);
-            data.put("FilePartName", path.getFileName().toString());
-
-            Command command = new Command(CommandType.NextFilePart, data);
-            send(command);
-        }
+//        for (Path path : newPaths) {
+//            String checksum = fileChecksum(path);
+//            HashMap<String, String> data = new HashMap<>();
+//            data.put("Checksum", checksum);
+//            data.put("FilePartName", path.getFileName().toString());
+//
+//            Command command = new Command(CommandType.NextFilePart, data);
+//            send(command);
+//        }
     }
 }
