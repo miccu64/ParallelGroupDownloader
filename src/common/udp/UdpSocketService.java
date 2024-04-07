@@ -10,15 +10,18 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 public abstract class UdpSocketService implements Runnable, AutoCloseable {
-    protected final FileInfoHolder fileInfoHolder = new FileInfoHolder();
+    protected final FileInfoHolder fileInfoHolder;
     protected final MulticastSocket socket;
 
     private final InetAddress group;
     private final byte[] buf = new byte[256];
     private final int port;
+    private final Thread udpcastThread;
 
-    public UdpSocketService(String multicastIp, int port) throws DownloadException {
+    public UdpSocketService(String multicastIp, int port, FileInfoHolder fileInfoHolder, UdpcastService udpcastService) throws DownloadException {
         this.port = port;
+        this.fileInfoHolder = fileInfoHolder;
+
         try {
             this.group = InetAddress.getByName(multicastIp);
             socket = new MulticastSocket(this.port);
@@ -26,6 +29,9 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
         } catch (IOException e) {
             throw new DownloadException(e, "Could not join to multicast: " + multicastIp + ":" + port);
         }
+
+        udpcastThread = new Thread(udpcastService);
+        udpcastThread.start();
     }
 
     public void run() {
@@ -62,6 +68,7 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
 
     @Override
     public void close() {
+        udpcastThread.interrupt();
         socket.close();
     }
 

@@ -3,23 +3,19 @@ package server.udp;
 import common.DownloadException;
 import common.command.Command;
 import common.command.CommandType;
+import common.udp.FileInfoHolder;
 import common.udp.UdpSocketService;
 import server.FileDownloader;
 
 import java.util.HashMap;
 
 public class ServerUdpSocketService extends UdpSocketService {
-    private final Thread udpcastThread;
     private final Thread fileDownloaderThread;
 
-    public ServerUdpSocketService(String multicastIp, int port, String url) throws DownloadException {
-        super(multicastIp, port);
+    public ServerUdpSocketService(String multicastIp, int port, String url, FileInfoHolder fileInfoHolder) throws DownloadException {
+        super(multicastIp, port, fileInfoHolder, new ServerUdpcastService(5000, fileInfoHolder));
 
-        ServerUdpcastService serverUdpcastService = new ServerUdpcastService(5000, this.fileInfoHolder);
-        udpcastThread = new Thread(serverUdpcastService);
-        udpcastThread.start();
-
-        FileDownloader fileDownloader = new FileDownloader(url, 1, this.fileInfoHolder);
+        FileDownloader fileDownloader = new FileDownloader(url, 1, fileInfoHolder);
         fileDownloaderThread = new Thread(() -> {
             int result = fileDownloader.call();
             if (result == 0) {
@@ -44,7 +40,6 @@ public class ServerUdpSocketService extends UdpSocketService {
     public void close() {
         super.close();
         fileDownloaderThread.interrupt();
-        udpcastThread.interrupt();
     }
 
     private void handleDownloaderError() {
