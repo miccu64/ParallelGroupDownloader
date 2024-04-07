@@ -9,11 +9,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class UdpcastService implements Runnable {
-    public final AtomicBoolean downloadInProgress = new AtomicBoolean(true);
-
     private final StringBuilder udpcastRunCommand;
     private final FileInfoHolder fileInfoHolder;
 
@@ -33,7 +30,7 @@ public abstract class UdpcastService implements Runnable {
 
     @Override
     public void run() {
-        while (downloadInProgress.get()) {
+        while (fileInfoHolder.isInProgress()) {
             Path path = fileInfoHolder.filesToProcess.peek();
             if (path == null) {
                 try {
@@ -44,8 +41,7 @@ public abstract class UdpcastService implements Runnable {
                 try {
                     processSingleFile(path);
                 } catch (DownloadException e) {
-                    // TODO: handle status
-                    downloadInProgress.set(false);
+                    fileInfoHolder.setErrorStatus();
                     throw new RuntimeException(e);
                 }
             }

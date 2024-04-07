@@ -7,13 +7,10 @@ import common.udp.UdpSocketService;
 import server.FileDownloader;
 
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class ServerUdpSocketService extends UdpSocketService {
-    private final Future<Integer> fileDownloaderFuture;
     private final Thread udpcastThread;
+    private final Thread fileDownloaderThread;
 
     public ServerUdpSocketService(String multicastIp, int port, String url) throws DownloadException {
         super(multicastIp, port);
@@ -23,9 +20,15 @@ public class ServerUdpSocketService extends UdpSocketService {
         udpcastThread.start();
 
         FileDownloader fileDownloader = new FileDownloader(url, 1, this.fileInfoHolder);
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-        fileDownloaderFuture = executorService.submit(fileDownloader);
-        // TODO: listen to fileDownloaderFuture
+        fileDownloaderThread = new Thread(() -> {
+            int result = fileDownloader.call();
+            if (result == 0) {
+                handleDownloaderSuccess();
+            } else {
+                handleDownloaderError();
+            }
+        });
+        fileDownloaderThread.start();
     }
 
     @Override
@@ -40,12 +43,15 @@ public class ServerUdpSocketService extends UdpSocketService {
     @Override
     public void close() {
         super.close();
+        fileDownloaderThread.interrupt();
         udpcastThread.interrupt();
     }
 
     private void handleDownloaderError() {
         Command command = new Command(CommandType.DownloadAbort);
         send(command);
+
+        fileInfoHolder.setErrorStatus();
 
         close();
         System.exit(1);

@@ -8,16 +8,14 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class UdpSocketService implements Runnable, AutoCloseable {
+    protected final FileInfoHolder fileInfoHolder = new FileInfoHolder();
     protected final MulticastSocket socket;
 
     private final InetAddress group;
     private final byte[] buf = new byte[256];
     private final int port;
-    private final AtomicBoolean loop = new AtomicBoolean(true);
-    protected final FileInfoHolder fileInfoHolder = new FileInfoHolder();
 
     public UdpSocketService(String multicastIp, int port) throws DownloadException {
         this.port = port;
@@ -31,7 +29,7 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
     }
 
     public void run() {
-        while (loop.get()) {
+        while (fileInfoHolder.isInProgress()) {
             DatagramPacket datagram = new DatagramPacket(buf, buf.length);
             try {
                 socket.receive(datagram);
@@ -64,14 +62,16 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
 
     @Override
     public void close() {
-        loop.set(false);
         socket.close();
     }
 
     protected boolean actionsOnCommandReceive(Command receivedCommand) {
-        if (receivedCommand.getType() == CommandType.FindOthers) {
+        CommandType type = receivedCommand.getType();
+        if (type == CommandType.FindOthers) {
             Command command = new Command(CommandType.ResponseToFindOthers);
             send(command);
+        } else if (type == CommandType.DownloadAbort) {
+            fileInfoHolder.setErrorStatus();
         }
 
         return true;
