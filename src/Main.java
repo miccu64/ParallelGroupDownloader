@@ -4,7 +4,7 @@ import common.utils.PrepareDownloadUtils;
 import java.util.concurrent.CyclicBarrier;
 
 public class Main {
-    public static void main(String[] args) throws DownloadException, InterruptedException {
+    public static void main(String[] args) throws DownloadException {
         PrepareDownloadUtils.initProgram();
 
         int threadsCount = 2;
@@ -13,7 +13,6 @@ public class Main {
             String url = "file:/home/lubuntu/Desktop/someFile.txt";
             Thread thread = new MainThread("230.1.1.1", 10100, url, cyclicBarrier);
             thread.start();
-
         }
 
         System.out.println("All threads have completed.");

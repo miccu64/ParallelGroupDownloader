@@ -1,6 +1,8 @@
 package common.udp;
 
 import common.DownloadException;
+import common.command.Command;
+import common.command.CommandType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,10 +12,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static common.utils.FilePartUtils.joinAndDeleteFileParts;
 
-public abstract class UdpcastService implements Runnable {
+public abstract class UdpcastService implements Callable<Integer> {
     private final StringBuilder udpcastRunCommand;
     private final FileInfoHolder fileInfoHolder;
 
@@ -32,7 +35,7 @@ public abstract class UdpcastService implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Integer call() {
         while (fileInfoHolder.isInProgress()) {
             Path path = fileInfoHolder.filesToProcess.peek();
             if (path == null) {
@@ -47,16 +50,25 @@ public abstract class UdpcastService implements Runnable {
                     if (fileInfoHolder.processedFiles.size() == fileInfoHolder.expectedPartsCount.get()){
                         if (joinAndDeleteFileParts(new ArrayList<>(fileInfoHolder.processedFiles))) {
                             fileInfoHolder.setSuccessStatus();
+                            return 0;
                         } else {
-                            fileInfoHolder.setErrorStatus();
+                            return handleError();
                         }
                     }
                 } catch (DownloadException e) {
-                    fileInfoHolder.setErrorStatus();
-                    throw new RuntimeException(e);
+                    return handleError();
                 }
             }
         }
+
+        if (fileInfoHolder.isSuccess())
+            return 0;
+        else return 1;
+    }
+
+    private int handleError() {
+        fileInfoHolder.setErrorStatus();
+        return 1;
     }
 
     private void processSingleFile(Path path) throws DownloadException {

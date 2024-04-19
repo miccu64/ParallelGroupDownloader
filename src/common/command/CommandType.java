@@ -7,5 +7,6 @@ public enum CommandType {
     DownloadStart,
     DownloadAbort,
     NextFilePart,
-    Success
+    Success,
+    ServerExit
 }

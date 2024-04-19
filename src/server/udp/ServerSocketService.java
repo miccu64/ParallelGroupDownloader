@@ -51,6 +51,9 @@ public class ServerSocketService extends SocketService {
 
     @Override
     public void close() {
+        Command command = new Command(CommandType.ServerExit);
+        send(command);
+
         super.close();
         fileDownloaderThread.interrupt();
     }

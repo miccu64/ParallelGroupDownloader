@@ -5,10 +5,7 @@ import common.command.Command;
 import common.command.CommandType;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.SocketException;
+import java.net.*;
 
 public abstract class SocketService implements Runnable, AutoCloseable {
     protected final FileInfoHolder fileInfoHolder;
@@ -31,7 +28,11 @@ public abstract class SocketService implements Runnable, AutoCloseable {
             throw new DownloadException(e, "Could not join to multicast: " + multicastIp + ":" + port);
         }
 
-        udpcastThread = new Thread(udpcastService);
+        udpcastThread = new Thread(() -> {
+            int result = udpcastService.call();
+            close();
+            System.exit(result);
+        });
     }
 
     public void run() {
@@ -43,13 +44,11 @@ public abstract class SocketService implements Runnable, AutoCloseable {
                 Command receivedCommand = new Command(datagram);
                 System.out.println("Received from " + datagram.getSocketAddress() + ": " + receivedCommand);
 
-                new Thread(() -> {
-                    boolean shouldLoop = actionsOnCommandReceive(receivedCommand);
-                    if (!shouldLoop) {
-                        close();
-                    }
-                }).start();
-            } catch (SocketException | DownloadException ignored) {
+                boolean shouldLoop = actionsOnCommandReceive(receivedCommand);
+                if (!shouldLoop) {
+                    close();
+                }
+            } catch (SocketTimeoutException | SocketException | DownloadException ignored) {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
