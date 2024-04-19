@@ -2,6 +2,7 @@ package server;
 
 import common.DownloadException;
 import common.udp.FileInfoHolder;
+import server.udp.SendCommandCallback;
 
 import java.io.*;
 import java.net.*;
@@ -20,6 +21,7 @@ public class FileDownloader implements Callable<Integer> {
     private final int blockSize;
     private final long fileSizeInMB;
     private  final FileInfoHolder fileInfoHolder;
+    private final SendCommandCallback sendCommandCallback;
 
     private Path filePath;
     private String fileName;
@@ -29,8 +31,9 @@ public class FileDownloader implements Callable<Integer> {
         return fileSizeInMB;
     }
 
-    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder) throws DownloadException {
+    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder, SendCommandCallback sendCommandCallback) throws DownloadException {
         this.fileInfoHolder = fileInfoHolder;
+        this.sendCommandCallback=sendCommandCallback;
 
         try {
             URI uri = new URI(url);
@@ -58,10 +61,12 @@ public class FileDownloader implements Callable<Integer> {
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
-                    fileInfoHolder.filesToProcess.add(filePartPath);
                 } catch (SecurityException | IOException e) {
-                    return handleDownloadError(e, "Cannot save to file: " + partFile.getAbsolutePath());
+                    return handleDownloadError(e, "Cannot save to file: " + partFile);
                 }
+
+                fileInfoHolder.filesToProcess.add(filePartPath);
+                sendCommandCallback.informNewPart(filePartPath);
             } while (transferredCount == blockSize);
         } catch (IOException e) {
             return handleDownloadError(e, "Cannot open given URL. Download aborted");
@@ -115,6 +120,6 @@ public class FileDownloader implements Callable<Integer> {
     }
 
     private Path createFilePartPath(int partNumber) {
-        return Paths.get(filePath + ".part" + partNumber);
+        return Paths.get(filePath + ".part" + partNumber).toAbsolutePath();
     }
 }

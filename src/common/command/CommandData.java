@@ -16,6 +16,9 @@ public class CommandData {
     public CommandType getCommandType() {
         return commandType;
     }
+    public Map<String, String> getData() {
+        return data;
+    }
 
     public CommandData(CommandType commandType, Map<String, String> data) {
         this.commandType = commandType;

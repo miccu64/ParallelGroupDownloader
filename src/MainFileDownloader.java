@@ -15,7 +15,7 @@ public class MainFileDownloader {
         Path testFilePath = Paths.get("_master_thesis", "Praca_magisterska.docx");
         URL url = testFilePath.toUri().toURL();
         //String url = "https://getsamplefiles.com/download/zip/sample-1.zip";
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
-        System.out.println(fileDownloader.getFileSizeInMB());
+//        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
+//        System.out.println(fileDownloader.getFileSizeInMB());
     }
 }

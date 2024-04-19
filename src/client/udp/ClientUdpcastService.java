@@ -10,6 +10,7 @@ public class ClientUdpcastService extends UdpcastService {
         super("udp-receiver", new HashMap<String, String>() {{
             put("nokbd", "");
             put("start-timeout", "3");
+            put("receive-timeout", "10");
             put("portbase", String.valueOf(port));
         }}, fileInfoHolder);
     }

@@ -8,8 +8,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.SocketException;
 
-public abstract class UdpSocketService implements Runnable, AutoCloseable {
+public abstract class SocketService implements Runnable, AutoCloseable {
     protected final FileInfoHolder fileInfoHolder;
     protected final MulticastSocket socket;
 
@@ -18,7 +19,7 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
     private final int port;
     private final Thread udpcastThread;
 
-    public UdpSocketService(String multicastIp, int port, FileInfoHolder fileInfoHolder, UdpcastService udpcastService) throws DownloadException {
+    public SocketService(String multicastIp, int port, FileInfoHolder fileInfoHolder, UdpcastService udpcastService) throws DownloadException {
         this.port = port;
         this.fileInfoHolder = fileInfoHolder;
 
@@ -31,7 +32,6 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
         }
 
         udpcastThread = new Thread(udpcastService);
-        udpcastThread.start();
     }
 
     public void run() {
@@ -49,9 +49,9 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
                         close();
                     }
                 }).start();
+            } catch (SocketException | DownloadException ignored) {
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            } catch (DownloadException ignored) {
             }
         }
     }
@@ -82,5 +82,9 @@ public abstract class UdpSocketService implements Runnable, AutoCloseable {
         }
 
         return true;
+    }
+
+    protected void startUdpcastThread() {
+        udpcastThread.start();
     }
 }

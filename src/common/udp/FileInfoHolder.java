@@ -2,11 +2,13 @@ package common.udp;
 
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileInfoHolder {
     public final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
     public final ConcurrentLinkedQueue<Path> filesToProcess = new ConcurrentLinkedQueue<>();
+    public final AtomicBoolean canBecomeServer = new AtomicBoolean(true);
 
     private final int inProgress = -1;
     private final int success = 0;

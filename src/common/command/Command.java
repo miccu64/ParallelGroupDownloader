@@ -13,6 +13,10 @@ public class Command {
         return data.getCommandType();
     }
 
+    public Map<String, String> getData() {
+        return data.getData();
+    }
+
     public Command(CommandType type) {
         this(type, null);
     }

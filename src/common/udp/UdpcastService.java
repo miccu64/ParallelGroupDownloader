@@ -34,7 +34,7 @@ public abstract class UdpcastService implements Runnable {
             Path path = fileInfoHolder.filesToProcess.peek();
             if (path == null) {
                 try {
-                    wait(1000);
+                    Thread.sleep(100);
                 } catch (InterruptedException ignored) {
                 }
             } else {

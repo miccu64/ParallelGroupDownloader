@@ -1,9 +1,10 @@
-import client.udp.ClientUdpSocketService;
+import client.udp.ClientSocketService;
 import common.DownloadException;
-import common.udp.UdpSocketService;
+import common.udp.FileInfoHolder;
+import common.udp.SocketService;
 import common.command.Command;
 import common.command.CommandType;
-import server.udp.ServerUdpSocketService;
+import server.udp.ServerSocketService;
 
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
@@ -14,11 +15,14 @@ import static common.utils.PrepareDownloadUtils.checkIsValidUrl;
 public class MainThread extends Thread {
     private static final AtomicBoolean canTakeInput = new AtomicBoolean(true);
     private final CyclicBarrier cyclicBarrier;
+
+
+    private final FileInfoHolder fileInfoHolder = new FileInfoHolder();
     private final String multicastIp;
     private final int port;
 
-    private UdpSocketService udpSocketService;
-    private Thread udpServiceThread;
+    private SocketService socketService;
+    private Thread socketServiceThread;
     private String url;
 
     public MainThread(String multicastIp, int port, String url, CyclicBarrier cyclicBarrier) throws DownloadException {
@@ -29,9 +33,9 @@ public class MainThread extends Thread {
 
         checkIsValidUrl(url);
 
-        udpSocketService = new ClientUdpSocketService(multicastIp, port);
-        udpServiceThread = new Thread(udpSocketService);
-        udpServiceThread.start();
+        socketService = new ClientSocketService(multicastIp, port, fileInfoHolder);
+        socketServiceThread = new Thread(socketService);
+        socketServiceThread.start();
     }
 
     public void run() {
@@ -39,7 +43,7 @@ public class MainThread extends Thread {
             cyclicBarrier.await();
 
             Command packet = new Command(CommandType.FindOthers);
-            udpSocketService.send(packet);
+            socketService.send(packet);
 
             if (canTakeInput.compareAndSet(true, false)) {
                 waitForUserInput();
@@ -62,7 +66,8 @@ public class MainThread extends Thread {
 
             String input;
             try {
-                input = scanner.nextLine();
+                //input = scanner.nextLine();
+                input = "1";
             } catch (Exception ignored) {
                 return;
             }
@@ -72,17 +77,25 @@ public class MainThread extends Thread {
                     if (url == null) {
                         System.out.println("No source URL was given when started program. Restart with provided URL");
                     } else {
-                        Map<String, String> data = new HashMap<>();
-                        data.put("Url", url);
-                        Command command = new Command(CommandType.DownloadStart, data);
-                        udpSocketService.send(command);
-                        udpServiceThread.interrupt();
-                        udpSocketService.close();
+                        if (!fileInfoHolder.canBecomeServer.get()){
+                            break;
+                        }
 
+                        Command command = new Command(CommandType.BecameServer);
+                        socketService.send(command);
+
+                        socketServiceThread.interrupt();
+                        socketService.close();
                         try {
-                            udpSocketService = new ServerUdpSocketService(multicastIp, port, url);
-                            udpServiceThread = new Thread(udpSocketService);
-                            udpServiceThread.start();
+                            socketService = new ServerSocketService(multicastIp, port, url, fileInfoHolder);
+                            socketServiceThread = new Thread(socketService);
+                            socketServiceThread.start();
+
+                            HashMap<String, String> data = new HashMap<>();
+                            data.put("url", url);
+                            command = new Command(CommandType.DownloadStart, data);
+                            socketService.send(command);
+
                             System.out.println("Download started...");
                         } catch (DownloadException ignored) {
                             System.exit(1);
@@ -92,8 +105,8 @@ public class MainThread extends Thread {
                     }
                     break;
                 case "0":
-                    udpServiceThread.interrupt();
-                    udpSocketService.close();
+                    socketServiceThread.interrupt();
+                    socketService.close();
 
                     System.exit(0);
                     break;

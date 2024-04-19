@@ -7,7 +7,7 @@ public class Main {
     public static void main(String[] args) throws DownloadException {
         PrepareDownloadUtils.initProgram();
 
-        int threadsCount = 3;
+        int threadsCount = 2;
         CyclicBarrier cyclicBarrier = new CyclicBarrier(threadsCount);
         for (int i = 0; i < threadsCount; i++){
             String url = "file:/home/lubuntu/Desktop/someFile.txt";
