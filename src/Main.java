@@ -13,6 +13,7 @@ public class Main {
             String url = "file:/home/lubuntu/Desktop/someFile.txt";
             Thread thread = new MainThread("230.1.1.1", 10100, url, cyclicBarrier);
             thread.start();
+
         }
 
         System.out.println("All threads have completed.");
