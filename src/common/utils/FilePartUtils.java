@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -23,16 +24,19 @@ public class FilePartUtils {
         }
     }
 
-    public static boolean joinAndDeleteFileParts(Path finalFile, List<Path> fileParts) {
+    public static boolean joinAndDeleteFileParts(List<Path> fileParts) {
+        String finalFileName = fileParts.get(0).getFileName().toString().replaceFirst("[.][^.]+$", "");
+        Path savePath = Paths.get(String.valueOf(fileParts.get(0).getParent()), finalFileName);
+
         try {
-            Files.deleteIfExists(finalFile);
-            Files.createFile(finalFile);
+            Files.deleteIfExists(savePath);
+            Files.createFile(savePath);
         } catch (IOException e) {
-            return handleException(e, "Cannot create result file: " + finalFile, fileParts);
+            return handleException(e, "Cannot create result file: " + savePath, fileParts);
         }
 
         for (Path filePart : fileParts) {
-            try (OutputStream out = Files.newOutputStream(finalFile, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+            try (OutputStream out = Files.newOutputStream(savePath, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
                 Files.copy(filePart, out);
                 removeFileParts(Collections.singletonList(filePart));
             } catch (IOException e) {

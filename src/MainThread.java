@@ -1,5 +1,6 @@
 import client.udp.ClientSocketService;
 import common.DownloadException;
+import common.command.CommandData;
 import common.udp.FileInfoHolder;
 import common.udp.SocketService;
 import common.command.Command;
@@ -74,33 +75,13 @@ public class MainThread extends Thread {
 
             switch (input) {
                 case "1":
-                    if (url == null) {
-                        System.out.println("No source URL was given when started program. Restart with provided URL");
+                    if (!fileInfoHolder.canBecomeServer.get()) {
+                        System.out.println("Different device invoked downloading. TThis device will act as a client.");
+                        loop = false;
+                    } else if (url == null) {
+                        System.out.println("No source URL was given when started program. Restart with provided URL.");
                     } else {
-                        if (!fileInfoHolder.canBecomeServer.get()){
-                            break;
-                        }
-
-                        Command command = new Command(CommandType.BecameServer);
-                        socketService.send(command);
-
-                        socketServiceThread.interrupt();
-                        socketService.close();
-                        try {
-                            socketService = new ServerSocketService(multicastIp, port, url, fileInfoHolder);
-                            socketServiceThread = new Thread(socketService);
-                            socketServiceThread.start();
-
-                            HashMap<String, String> data = new HashMap<>();
-                            data.put("url", url);
-                            command = new Command(CommandType.DownloadStart, data);
-                            socketService.send(command);
-
-                            System.out.println("Download started...");
-                        } catch (DownloadException ignored) {
-                            System.exit(1);
-                        }
-
+                        becomeServer();
                         loop = false;
                     }
                     break;
@@ -113,6 +94,28 @@ public class MainThread extends Thread {
                 default:
                     System.out.println("Wrong option\n");
             }
+        }
+    }
+
+    private void becomeServer() {
+        Command command = new Command(CommandType.BecameServer);
+        socketService.send(command);
+
+        socketServiceThread.interrupt();
+        socketService.close();
+        try {
+            socketService = new ServerSocketService(multicastIp, port, url, fileInfoHolder);
+            socketServiceThread = new Thread(socketService);
+            socketServiceThread.start();
+
+            HashMap<String, String> data = new HashMap<>();
+            data.put(CommandData.Url, url);
+            command = new Command(CommandType.DownloadStart, data);
+            socketService.send(command);
+
+            System.out.println("Download started...");
+        } catch (DownloadException ignored) {
+            System.exit(1);
         }
     }
 }

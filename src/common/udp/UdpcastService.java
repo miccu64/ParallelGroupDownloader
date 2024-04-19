@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+
+import static common.utils.FilePartUtils.joinAndDeleteFileParts;
 
 public abstract class UdpcastService implements Runnable {
     private final StringBuilder udpcastRunCommand;
@@ -40,6 +43,14 @@ public abstract class UdpcastService implements Runnable {
             } else {
                 try {
                     processSingleFile(path);
+
+                    if (fileInfoHolder.processedFiles.size() == fileInfoHolder.expectedPartsCount.get()){
+                        if (joinAndDeleteFileParts(new ArrayList<>(fileInfoHolder.processedFiles))) {
+                            fileInfoHolder.setSuccessStatus();
+                        } else {
+                            fileInfoHolder.setErrorStatus();
+                        }
+                    }
                 } catch (DownloadException e) {
                     fileInfoHolder.setErrorStatus();
                     throw new RuntimeException(e);

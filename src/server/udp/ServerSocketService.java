@@ -2,6 +2,7 @@ package server.udp;
 
 import common.DownloadException;
 import common.command.Command;
+import common.command.CommandData;
 import common.command.CommandType;
 import common.udp.FileInfoHolder;
 import common.udp.SocketService;
@@ -17,7 +18,7 @@ public class ServerSocketService extends SocketService {
 
         SendCommandCallback callback = filePartPath -> {
             HashMap<String, String> data = new HashMap<>();
-            data.put("fileName", String.valueOf(filePartPath.getFileName()));
+            data.put(CommandData.FileName, String.valueOf(filePartPath.getFileName()));
 
             Command command = new Command(CommandType.NextFilePart, data);
             send(command);
@@ -66,23 +67,10 @@ public class ServerSocketService extends SocketService {
 
     private void handleDownloaderSuccess() {
         HashMap<String, String> data = new HashMap<>();
-        // TODO: give proper value
-        int partsCount = 1;
-        data.put("PartsCount", String.valueOf(partsCount));
+        int partsCount = fileInfoHolder.expectedPartsCount.get();
+        data.put(CommandData.PartsCount, String.valueOf(partsCount));
 
         Command command = new Command(CommandType.Success, data);
         send(command);
-    }
-
-    private void handleDownloaderNewFileParts() {
-//        for (Path path : newPaths) {
-//            String checksum = fileChecksum(path);
-//            HashMap<String, String> data = new HashMap<>();
-//            data.put("Checksum", checksum);
-//            data.put("FilePartName", path.getFileName().toString());
-//
-//            Command command = new Command(CommandType.NextFilePart, data);
-//            send(command);
-//        }
     }
 }

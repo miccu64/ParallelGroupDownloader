@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CommandData {
+    public static String PartsCount = "PartsCount";
+    public static String FileName = "FileName";
+    public static String Url = "Url";
+
     private static final String separator = "&&&";
     private static final String kvSeparator = "=";
 

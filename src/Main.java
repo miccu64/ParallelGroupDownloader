@@ -4,7 +4,7 @@ import common.utils.PrepareDownloadUtils;
 import java.util.concurrent.CyclicBarrier;
 
 public class Main {
-    public static void main(String[] args) throws DownloadException {
+    public static void main(String[] args) throws DownloadException, InterruptedException {
         PrepareDownloadUtils.initProgram();
 
         int threadsCount = 2;

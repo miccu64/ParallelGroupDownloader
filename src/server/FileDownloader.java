@@ -72,6 +72,7 @@ public class FileDownloader implements Callable<Integer> {
             return handleDownloadError(e, "Cannot open given URL. Download aborted");
         }
 
+        fileInfoHolder.expectedPartsCount.set(fileInfoHolder.getFilesCount());
         return 0;
     }
 
