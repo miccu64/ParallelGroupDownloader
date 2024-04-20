@@ -47,7 +47,7 @@ public abstract class UdpcastService implements Callable<Integer> {
                 try {
                     processSingleFile(path);
 
-                    if (fileInfoHolder.processedFiles.size() == fileInfoHolder.expectedPartsCount.get()){
+                    if (fileInfoHolder.processedAllFiles()){
                         if (joinAndDeleteFileParts(new ArrayList<>(fileInfoHolder.processedFiles))) {
                             fileInfoHolder.setSuccessStatus();
                             return 0;

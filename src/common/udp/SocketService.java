@@ -31,7 +31,9 @@ public abstract class SocketService implements Runnable, AutoCloseable {
         udpcastThread = new Thread(() -> {
             int result = udpcastService.call();
             close();
-            System.exit(result);
+            if (result != 0) {
+                System.exit(result);
+            }
         });
     }
 

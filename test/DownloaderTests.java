@@ -8,21 +8,17 @@ import server.FileDownloader;
 import server.udp.SendCommandCallback;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
 public class DownloaderTests {
     @Test
-    public void testOriginalAndDownloadedFilesChecksums() throws IOException, NoSuchAlgorithmException, DownloadException {
+    public void testOriginalAndDownloadedFilesEquality() throws IOException, DownloadException {
         PrepareDownloadUtils.initProgram();
 
         FileInfoHolder fileInfoHolder = new FileInfoHolder();
@@ -31,7 +27,7 @@ public class DownloaderTests {
 
         String testDirectory = "filesTest";
         Files.createDirectories(Paths.get(testDirectory));
-        String fileName= "testOriginalAndDownloadedFilesChecksums.file";
+        String fileName = "testOriginalAndDownloadedFilesEquality.file";
         Path testFilePath = Paths.get(testDirectory, fileName);
         URL url = testFilePath.toUri().toURL();
         FileDownloader fileDownloader = new FileDownloader(url.toString(), 1, fileInfoHolder, callback);
@@ -45,21 +41,13 @@ public class DownloaderTests {
             Assertions.assertEquals(0, result);
             Assertions.assertTrue(FilePartUtils.joinAndDeleteFileParts(new ArrayList<>(fileInfoHolder.filesToProcess)));
 
-            byte[] originalChecksum = fileChecksum(testFilePath);
-            byte[] downloadedChecksum = fileChecksum(PrepareDownloadUtils.serverDownloadPath);
+            String originalChecksum = FilePartUtils.fileChecksum(testFilePath);
+            String downloadedChecksum = FilePartUtils.fileChecksum(PrepareDownloadUtils.serverDownloadPath);
 
-            Assertions.assertArrayEquals(originalChecksum, downloadedChecksum);
+            Assertions.assertEquals(originalChecksum, downloadedChecksum);
         } finally {
             FilePartUtils.removeFileParts(new ArrayList<>(fileInfoHolder.filesToProcess));
             FilePartUtils.removeFileParts(Collections.singletonList(testFilePath));
-        }
-    }
-
-    private byte[] fileChecksum(Path filePath) throws IOException, NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        try (InputStream is = Files.newInputStream(filePath);
-             DigestInputStream ignored = new DigestInputStream(is, md)) {
-            return md.digest();
         }
     }
 }

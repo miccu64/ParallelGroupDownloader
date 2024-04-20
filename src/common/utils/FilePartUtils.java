@@ -6,12 +6,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 
 public class FilePartUtils {
@@ -28,22 +26,17 @@ public class FilePartUtils {
         String finalFileName = fileParts.get(0).getFileName().toString().replaceFirst("[.][^.]+$", "");
         Path savePath = Paths.get(String.valueOf(fileParts.get(0).getParent()), finalFileName);
 
-        try {
-            Files.deleteIfExists(savePath);
-            Files.createFile(savePath);
-        } catch (IOException e) {
-            return handleException(e, "Cannot create result file: " + savePath, fileParts);
-        }
-
-        for (Path filePart : fileParts) {
-            try (OutputStream out = Files.newOutputStream(savePath, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+        System.out.println(savePath);
+        try (OutputStream out = Files.newOutputStream(savePath)) {
+            for (Path filePart : fileParts) {
+                System.out.println(filePart);
                 Files.copy(filePart, out);
-                removeFileParts(Collections.singletonList(filePart));
-            } catch (IOException e) {
-                return handleException(e, "Error while joining parts of file", fileParts);
             }
+        } catch (IOException e) {
+            return handleException(e, "Error while joining parts of file", fileParts);
         }
 
+        removeFileParts(fileParts);
         return true;
     }
 

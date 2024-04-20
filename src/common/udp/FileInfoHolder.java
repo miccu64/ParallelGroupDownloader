@@ -20,6 +20,10 @@ public class FileInfoHolder {
         return paths.size();
     }
 
+    public boolean processedAllFiles() {
+        return processedFiles.size() == expectedPartsCount.get();
+    }
+
     private final int inProgress = -1;
     private final int success = 0;
     private final int error = 1;
