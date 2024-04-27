@@ -12,6 +12,7 @@ public class ServerUdpcastService extends UdpcastService {
             put("max-wait", "10");
             put("min-receivers", "1");
             put("portbase", String.valueOf(port));
+            put("retries-until-drop", "30");
         }}, fileInfoHolder);
     }
 }
