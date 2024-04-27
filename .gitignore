@@ -1,6 +1,7 @@
 downloadsServer/
 downloadsClient/
 filesTest/
+test/docker/disconnectTest/files/
 
 ### IntelliJ IDEA ###
 out/
@@ -31,3 +32,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/test/docker/files/
+/test/docker/files/
