@@ -1,6 +1,12 @@
 package common;
 
 public class DownloadException extends Exception {
+    public DownloadException(String message) {
+        super(message);
+
+        System.err.println(message);
+    }
+
     public DownloadException(Exception e, String message) {
         super(message);
 
