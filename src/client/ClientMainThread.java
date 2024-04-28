@@ -1,10 +1,13 @@
 package client;
 
 import common.DownloadException;
+import common.parser.EndFileContent;
 import common.udp.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -32,7 +35,18 @@ public class ClientMainThread implements Callable<Integer> {
                 Path filePart = createFilePartPath(fileName, partCount);
                 processedFiles.add(filePart);
                 udpcastService.processFile(filePart);
-                // TODO: check if is final part - if yes, end loop, change file name, add to array, check CRCs and join files
+
+                try {
+                    long fileSizeInBytes = Files.size(filePart);
+                    if (fileSizeInBytes < 1000) {
+                        EndFileContent endFileContent = new EndFileContent(filePart);
+
+                        // TODO: change file name, add to array, check CRCs and join files
+                        downloadInProgress = false;
+                    }
+                } catch (IOException e) {
+                    throw new DownloadException(e);
+                }
             }
         } catch (DownloadException e) {
             return 1;

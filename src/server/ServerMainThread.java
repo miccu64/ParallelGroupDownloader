@@ -1,11 +1,14 @@
 package server;
 
 import common.DownloadException;
+import common.parser.StartFileContent;
 import common.udp.FileInfoHolder;
 import common.udp.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -21,6 +24,7 @@ public class ServerMainThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        int result;
         FileInfoHolder fileInfoHolder = new FileInfoHolder();
         ArrayList<Path> processedFiles = new ArrayList<>();
 
@@ -30,34 +34,39 @@ public class ServerMainThread implements Callable<Integer> {
             fileDownloaderThread = new Thread(fileDownloader);
             fileDownloaderThread.start();
 
-            UdpcastService udpcastService = new ServerUdpcastService(9000);
-
-            int partCount = 0;
             Path startInfoFilePath = Paths.get(downloadPath, "startInfo.txt");
-            processedFiles.add((startInfoFilePath));
+            processedFiles.add(startInfoFilePath);
+            StartFileContent startInfoFileContent = new StartFileContent(url, fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
+            try {
+                Files.write(startInfoFilePath, startInfoFileContent.toString().getBytes());
+            } catch (IOException e) {
+                throw new DownloadException(e, "Could not save file: " + startInfoFilePath);
+            }
+
+            UdpcastService udpcastService = new ServerUdpcastService(9000);
             udpcastService.processFile(startInfoFilePath);
 
-            // TODO: parse file - size check, url print
-            String fileName = "todo";
-
             boolean downloadInProgress = true;
-            while (downloadInProgress) {
-                Path filePart = createFilePartPath(fileName, partCount);
-                processedFiles.add(filePart);
-                udpcastService.processFile(filePart);
+            while (fileInfoHolder.isInProgress()) {
                 // TODO: check if is final part - if yes, end loop, change file name, add to array, check CRCs and join files
+            }
+
+            if (fileInfoHolder.isSuccess()) {
+                result = 0;
+            } else {
+                result = 1;
             }
         } catch (DownloadException e) {
             if (fileDownloaderThread != null && fileDownloaderThread.isAlive()) {
                 fileDownloaderThread.interrupt();
             }
 
-            return 1;
+            result = 1;
         } finally {
             FilePartUtils.removeFiles(processedFiles);
         }
 
-        return 0;
+        return result;
     }
 
     private Path createFilePartPath(String fileName, int partCount) {

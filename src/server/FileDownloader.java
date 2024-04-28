@@ -12,7 +12,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 
 import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
@@ -20,13 +19,15 @@ public class FileDownloader implements Runnable {
     private final int blockSize;
     private final long fileSizeInMB;
     private final FileInfoHolder fileInfoHolder;
-
-    private Path filePath;
-    private String fileName;
-    private URL url;
+    private final Path filePath;
+    private final String fileName;
+    private final URL url;
 
     public long getFileSizeInMB() {
         return fileSizeInMB;
+    }
+    public String getFileName() {
+        return fileName;
     }
 
     public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder) throws DownloadException {
@@ -51,6 +52,8 @@ public class FileDownloader implements Runnable {
         long transferredCount;
 
         try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
+            System.out.println("Download started! Url: " + url);
+
             do {
                 Path filePartPath = createFilePartPath(blockNumber);
                 File partFile = filePartPath.toFile();
@@ -67,10 +70,7 @@ public class FileDownloader implements Runnable {
             } while (transferredCount == blockSize);
         } catch (IOException e) {
             handleDownloadError(e, "Cannot open given URL. Download aborted");
-            return;
         }
-
-        fileInfoHolder.expectedPartsCount.set(fileInfoHolder.getFilesCount());
     }
 
     private void handleDownloadError(Exception e, String message) {
@@ -103,7 +103,6 @@ public class FileDownloader implements Runnable {
                 fileSize = httpURLConnection.getContentLengthLong();
             } else {
                 fileSize = urlConnection.getContentLengthLong();
-
             }
 
             if (fileSize > 0) {
