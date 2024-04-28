@@ -2,9 +2,10 @@ package server;
 
 import common.DownloadException;
 import common.udp.FileInfoHolder;
-import server.udp.SendCommandCallback;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -12,16 +13,13 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 
-import static common.utils.FilePartUtils.removeFileParts;
 import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
-public class FileDownloader implements Callable<Integer> {
+public class FileDownloader implements Runnable {
     private final int blockSize;
     private final long fileSizeInMB;
-    private  final FileInfoHolder fileInfoHolder;
-    private final SendCommandCallback sendCommandCallback;
+    private final FileInfoHolder fileInfoHolder;
 
     private Path filePath;
     private String fileName;
@@ -31,9 +29,8 @@ public class FileDownloader implements Callable<Integer> {
         return fileSizeInMB;
     }
 
-    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder, SendCommandCallback sendCommandCallback) throws DownloadException {
+    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder) throws DownloadException {
         this.fileInfoHolder = fileInfoHolder;
-        this.sendCommandCallback=sendCommandCallback;
 
         try {
             URI uri = new URI(url);
@@ -49,7 +46,7 @@ public class FileDownloader implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() {
+    public void run() {
         int blockNumber = 0;
         long transferredCount;
 
@@ -62,27 +59,26 @@ public class FileDownloader implements Callable<Integer> {
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
                 } catch (SecurityException | IOException e) {
-                    return handleDownloadError(e, "Cannot save to file: " + partFile);
+                    handleDownloadError(e, "Cannot save to file: " + partFile);
+                    return;
                 }
 
                 fileInfoHolder.filesToProcess.add(filePartPath);
-                sendCommandCallback.informNewPart(filePartPath);
             } while (transferredCount == blockSize);
         } catch (IOException e) {
-            return handleDownloadError(e, "Cannot open given URL. Download aborted");
+            handleDownloadError(e, "Cannot open given URL. Download aborted");
+            return;
         }
 
         fileInfoHolder.expectedPartsCount.set(fileInfoHolder.getFilesCount());
-        return 0;
     }
 
-    private int handleDownloadError(Exception e, String message) {
+    private void handleDownloadError(Exception e, String message) {
         System.out.println(message);
         e.printStackTrace(System.out);
 
-        removeFileParts(new ArrayList<>(fileInfoHolder.filesToProcess));
-
-        return 1;
+        // TODO: clean downloaded files
+        fileInfoHolder.setErrorStatus();
     }
 
     private String getFileNameFromUrl(URI uri) {

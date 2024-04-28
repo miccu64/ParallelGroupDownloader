@@ -13,8 +13,8 @@ import java.util.Base64;
 import java.util.List;
 
 public class FilePartUtils {
-    public static void removeFileParts(List<Path> filePartPaths) {
-        for (Path path : filePartPaths) {
+    public static void removeFiles(List<Path> filePaths) {
+        for (Path path : filePaths) {
             try {
                 Files.deleteIfExists(path);
             } catch (IOException ignored) {
@@ -36,7 +36,7 @@ public class FilePartUtils {
             return handleException(e, "Error while joining parts of file", fileParts);
         }
 
-        removeFileParts(fileParts);
+        removeFiles(fileParts);
         return true;
     }
 
@@ -59,7 +59,7 @@ public class FilePartUtils {
         e.printStackTrace(System.out);
 
         if (fileParts != null) {
-            removeFileParts(fileParts);
+            removeFiles(fileParts);
         }
 
         return false;

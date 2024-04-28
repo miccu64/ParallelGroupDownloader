@@ -5,7 +5,6 @@ import common.utils.PrepareDownloadUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import server.FileDownloader;
-import server.udp.SendCommandCallback;
 
 import java.io.IOException;
 import java.net.URL;
