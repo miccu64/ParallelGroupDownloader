@@ -53,15 +53,16 @@ public class PrepareDownloadUtils {
         }
     }
 
-    private static boolean checkFreeSpace(long fileSizeInBytes) throws DownloadException {
-        if (fileSizeInBytes < 1) {
+    public static boolean checkFreeSpace(long fileSizeInMB) throws DownloadException {
+        if (fileSizeInMB < 1) {
             return true;
         }
 
         try {
             URI location = PrepareDownloadUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI();
             FileStore store = Files.getFileStore(Paths.get(location));
-            return store.getUsableSpace() > fileSizeInBytes * 2;
+            // TODO: should be fileSize + single partSize
+            return store.getUsableSpace() > fileSizeInMB * 1000;
         } catch (IOException | URISyntaxException e) {
             throw new DownloadException(e, "Cannot check free space");
         }
