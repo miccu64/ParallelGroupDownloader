@@ -18,7 +18,7 @@ public class PrepareDownloadUtils {
     public final static Path clientDownloadPath = Paths.get("downloadsClient");
 
     public static void initProgram() throws DownloadException {
-        checkUdpcastPacketPresence();
+        //checkUdpcastPacketPresence();
         createDownloadDirectories();
     }
 

@@ -9,9 +9,10 @@ public class Main {
         PrepareDownloadUtils.initProgram();
 
         String url = "file:/home/lubuntu/Desktop/file.file";
+        String udpcastPath = "D:\\Studia\\Magisterka\\ParallelGroupDownloader";
         int port = 9000;
-        ILogic clientLogic = new ClientLogic(port);
-        ILogic serverLogic = new ServerLogic(url, port);
+        ILogic clientLogic = new ClientLogic(port, udpcastPath);
+        ILogic serverLogic = new ServerLogic(url, port, udpcastPath);
 
     }
 }

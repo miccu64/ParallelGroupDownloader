@@ -1,3 +1,4 @@
+import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
@@ -10,7 +11,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
@@ -19,33 +19,30 @@ public class DownloaderTests {
     public void testOriginalAndDownloadedFilesEquality() throws IOException, DownloadException {
         PrepareDownloadUtils.initProgram();
 
-        FileInfoHolder fileInfoHolder = new FileInfoHolder();
-        SendCommandCallback callback = filePartPath -> {
-        };
-
         String testDirectory = "filesTest";
         Files.createDirectories(Paths.get(testDirectory));
         String fileName = "testOriginalAndDownloadedFilesEquality.file";
         Path testFilePath = Paths.get(testDirectory, fileName);
         URL url = testFilePath.toUri().toURL();
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1, fileInfoHolder, callback);
+        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
 
         byte[] bytes = new byte[1024 * 1024 * 10];
         new Random(22).nextBytes(bytes);
         try {
             Files.write(testFilePath, bytes);
 
-            int result = fileDownloader.call();
-            Assertions.assertEquals(0, result);
-            Assertions.assertTrue(FilePartUtils.joinAndDeleteFileParts(new ArrayList<>(fileInfoHolder.filesToProcess)));
+            StatusEnum result = fileDownloader.call();
+            Assertions.assertEquals(StatusEnum.Success, result);
+            Assertions.assertDoesNotThrow(() -> FilePartUtils.joinAndRemoveFileParts(fileDownloader.getProcessedFiles()));
 
             String originalChecksum = FilePartUtils.fileChecksum(testFilePath);
-            String downloadedChecksum = FilePartUtils.fileChecksum(PrepareDownloadUtils.serverDownloadPath);
+            Path downloadedFile = Paths.get(String.valueOf(PrepareDownloadUtils.serverDownloadPath), fileName);
+            String downloadedChecksum = FilePartUtils.fileChecksum(downloadedFile);
 
             Assertions.assertEquals(originalChecksum, downloadedChecksum);
         } finally {
-            FilePartUtils.removeFileParts(new ArrayList<>(fileInfoHolder.filesToProcess));
-            FilePartUtils.removeFileParts(Collections.singletonList(testFilePath));
+            FilePartUtils.removeFiles(fileDownloader.getProcessedFiles());
+            FilePartUtils.removeFile(testFilePath);
         }
     }
 }

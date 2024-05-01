@@ -26,8 +26,8 @@ public class ClientLogic implements ILogic {
     private Path startFilePath;
     private Path endFilePath;
 
-    public ClientLogic(int port) {
-        this.udpcastService = new ClientUdpcastService(port);
+    public ClientLogic(int port, String udpcastPath) throws DownloadException {
+        this.udpcastService = new ClientUdpcastService(port, udpcastPath);
     }
 
     public StatusEnum doWork() {
@@ -48,7 +48,7 @@ public class ClientLogic implements ILogic {
             }
 
             compareChecksums(endInfoFile.getChecksums());
-            FilePartUtils.joinAndDeleteFileParts(processedFiles);
+            FilePartUtils.joinAndRemoveFileParts(processedFiles);
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {

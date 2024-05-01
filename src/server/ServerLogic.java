@@ -27,9 +27,9 @@ public class ServerLogic implements ILogic {
     private Path startFilePath;
     private Path endFilePath;
 
-    public ServerLogic(String url, int port) {
+    public ServerLogic(String url, int port, String udpcastPath) throws DownloadException {
         this.url = url;
-        udpcastService = new ServerUdpcastService(port);
+        udpcastService = new ServerUdpcastService(port, udpcastPath);
     }
 
     public StatusEnum doWork() {
@@ -55,7 +55,7 @@ public class ServerLogic implements ILogic {
             processRemainingParts(fileDownloader.getProcessedFiles());
             processEndFile();
 
-            FilePartUtils.joinAndDeleteFileParts(processedFiles);
+            FilePartUtils.joinAndRemoveFileParts(processedFiles);
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {

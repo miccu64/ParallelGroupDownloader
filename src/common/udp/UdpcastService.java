@@ -6,14 +6,29 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public abstract class UdpcastService {
+    private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
     private final String udpcastRunCommand;
 
-    protected UdpcastService(String programName, Map<String, String> params) {
+    protected UdpcastService(String programName, Map<String, String> params, String udpcastPath) throws DownloadException {
+        if (isWindows) {
+            programName += ".exe";
+        }
+        if (udpcastPath != null) {
+            Path path = Paths.get(udpcastPath, programName);
+            if (!Files.exists(path)) {
+                throw new DownloadException("UDPcast executable does not exist in: " + path);
+            }
+            programName = String.valueOf(path);
+        }
+
         StringBuilder commandBuilder = new StringBuilder(programName);
         for (Map.Entry<String, String> entry : params.entrySet()) {
             commandBuilder.append(" --").append(entry.getKey());
@@ -29,8 +44,13 @@ public abstract class UdpcastService {
 
     public void processFile(Path filePath) throws DownloadException {
         String command = udpcastRunCommand + " --file " + filePath.toString();
-        // TODO: "/bin/bash", "-c" - is needed?
-        ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("/bin/bash", "-c", command));
+        List<String> params;
+        if (isWindows) {
+            params = Arrays.asList("cmd.exe", "/c", command);
+        } else {
+            params = Arrays.asList("/bin/bash", "-c", command);
+        }
+        ProcessBuilder processBuilder = new ProcessBuilder(params);
         Process process = null;
         try {
             process = processBuilder.start();

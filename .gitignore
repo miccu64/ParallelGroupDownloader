@@ -2,6 +2,8 @@ downloadsServer/
 downloadsClient/
 filesTest/
 test/docker/disconnectTest/files/
+test/files/
+udpcast/
 
 ### IntelliJ IDEA ###
 out/
