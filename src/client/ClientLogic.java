@@ -1,5 +1,7 @@
 package client;
 
+import common.ILogic;
+import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.parser.EndInfoFile;
@@ -15,39 +17,50 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 
-public class ClientMainThread implements Callable<Integer> {
+public class ClientLogic implements ILogic {
     private final String downloadPath = PrepareDownloadUtils.clientDownloadPath.toString();
     private final List<Path> processedFiles = new ArrayList<>();
     private final UdpcastService udpcastService;
 
-    public ClientMainThread(UdpcastService udpcastService) {
-        this.udpcastService = udpcastService;
+    private Path startFilePath;
+    private Path endFilePath;
+
+    public ClientLogic(int port) {
+        this.udpcastService = new ClientUdpcastService(port);
     }
 
-    @Override
-    public Integer call() {
-        int result = 1;
-        UdpcastService udpcastService = new ClientUdpcastService(9000);
+    public StatusEnum doWork() {
+        StatusEnum result;
         try {
             String fileName = processStartFile();
 
+            EndInfoFile endInfoFile = null;
             int partCount = 0;
-            boolean gotEndInfo = false;
-            while (!gotEndInfo) {
+            while (endInfoFile == null) {
                 Path filePart = createFilePartPath(fileName, partCount);
                 processedFiles.add(filePart);
                 udpcastService.processFile(filePart);
                 partCount++;
 
+                endInfoFile = tryProcessEndFile(filePart);
                 // TODO: avoid infinite loop
-                gotEndInfo = tryProcessEndFile(filePart);
             }
-            result = 0;
+
+            compareChecksums(endInfoFile.getChecksums());
+            FilePartUtils.joinAndDeleteFileParts(processedFiles);
+
+            result = StatusEnum.Success;
         } catch (DownloadException e) {
             System.out.println("Exiting...");
+            result = StatusEnum.Error;
         } finally {
+            if (startFilePath != null) {
+                processedFiles.add(startFilePath);
+            }
+            if (endFilePath != null) {
+                processedFiles.add(endFilePath);
+            }
             FilePartUtils.removeFiles(processedFiles);
         }
 
@@ -55,11 +68,10 @@ public class ClientMainThread implements Callable<Integer> {
     }
 
     private String processStartFile() throws DownloadException {
-        Path startInfoFilePath = Paths.get(downloadPath, "startInfo.txt");
-        processedFiles.add((startInfoFilePath));
-        udpcastService.processFile(startInfoFilePath);
+        startFilePath = Paths.get(downloadPath, "startInfo.txt");
+        udpcastService.processFile(startFilePath);
+        StartInfoFile startInfoFile = new StartInfoFile(startFilePath);
 
-        StartInfoFile startInfoFile = new StartInfoFile(startInfoFilePath);
         System.out.println("Download started. Url: " + startInfoFile.url + ", file name: " + startInfoFile.fileName);
         if (startInfoFile.fileSizeInMB == 0) {
             System.out.println("Not known file size - program will try download it anyway.");
@@ -73,11 +85,10 @@ public class ClientMainThread implements Callable<Integer> {
         return startInfoFile.fileName;
     }
 
-    private boolean tryProcessEndFile(Path filePart) throws DownloadException {
+    private EndInfoFile tryProcessEndFile(Path filePart) throws DownloadException {
         try {
             EndInfoFile endInfoFile = new EndInfoFile(filePart);
-            Path endFilePath = Paths.get(downloadPath, "endInfo.txt");
-            processedFiles.add(endFilePath);
+            endFilePath = Paths.get(downloadPath, "endInfo.txt");
             try {
                 Files.move(filePart, endFilePath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
@@ -85,14 +96,27 @@ public class ClientMainThread implements Callable<Integer> {
             }
             processedFiles.remove(filePart);
 
-            // TODO: check CRCs and join files
-            return true;
+            return endInfoFile;
         } catch (InfoFileException ignored) {
-            return false;
+            return null;
         }
     }
 
     private Path createFilePartPath(String fileName, int partCount) {
         return Paths.get(downloadPath, fileName + ".part" + partCount);
+    }
+
+    private void compareChecksums(List<String> expectedChecksums) throws DownloadException {
+        if (expectedChecksums.size() != processedFiles.size()){
+            throw new DownloadException("Checksums count does not equals downloaded files count.");
+        }
+
+        for (int i = 0; i<expectedChecksums.size(); i++) {
+            Path filePath = processedFiles.get(i);
+            String actualChecksum = FilePartUtils.fileChecksum(filePath);
+            if (!actualChecksum.equals(expectedChecksums.get(i))){
+                throw new DownloadException("Wrong checksum of file: " + filePath);
+            }
+        }
     }
 }

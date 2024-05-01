@@ -1,15 +1,17 @@
+import client.ClientLogic;
+import common.ILogic;
 import common.exceptions.DownloadException;
 import common.utils.PrepareDownloadUtils;
+import server.ServerLogic;
 
 public class Main {
     public static void main(String[] args) throws DownloadException {
         PrepareDownloadUtils.initProgram();
 
-        int threadsCount = 2;
-        for (int i = 0; i < threadsCount; i++) {
-            String url = "file:/home/lubuntu/Desktop/file.file";
-        }
+        String url = "file:/home/lubuntu/Desktop/file.file";
+        int port = 9000;
+        ILogic clientLogic = new ClientLogic(port);
+        ILogic serverLogic = new ServerLogic(url, port);
 
-        System.out.println("All threads have completed.");
     }
 }

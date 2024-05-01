@@ -1,5 +1,6 @@
 package server;
 
+import common.ILogic;
 import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.parser.EndInfoFile;
@@ -16,20 +17,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class ServerMainThread {
+public class ServerLogic implements ILogic {
     private final String downloadPath = PrepareDownloadUtils.serverDownloadPath.toString();
     private final String url;
     private final UdpcastService udpcastService;
-    private final ArrayList<Path> processedFiles;
+    private final ArrayList<Path> processedFiles = new ArrayList<>();
 
     private int processedPartsCount = 0;
     private Path startFilePath;
     private Path endFilePath;
 
-    public ServerMainThread(String url) {
+    public ServerLogic(String url, int port) {
         this.url = url;
-        udpcastService = new ServerUdpcastService(9000);
-        processedFiles = new ArrayList<>();
+        udpcastService = new ServerUdpcastService(port);
     }
 
     public StatusEnum doWork() {
