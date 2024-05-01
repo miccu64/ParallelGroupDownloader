@@ -1,6 +1,6 @@
 package common.utils;
 
-import common.DownloadException;
+import common.exceptions.DownloadException;
 
 import java.io.IOException;
 import java.net.URI;

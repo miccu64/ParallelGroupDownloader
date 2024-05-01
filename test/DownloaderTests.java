@@ -1,4 +1,4 @@
-import common.DownloadException;
+import common.exceptions.DownloadException;
 import common.udp.FileInfoHolder;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;

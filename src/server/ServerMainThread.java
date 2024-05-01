@@ -1,7 +1,7 @@
 package server;
 
-import common.DownloadException;
-import common.parser.StartFileContent;
+import common.exceptions.DownloadException;
+import common.parser.StartInfoFile;
 import common.udp.FileInfoHolder;
 import common.udp.UdpcastService;
 import common.utils.FilePartUtils;
@@ -36,7 +36,7 @@ public class ServerMainThread implements Callable<Integer> {
 
             Path startInfoFilePath = Paths.get(downloadPath, "startInfo.txt");
             processedFiles.add(startInfoFilePath);
-            StartFileContent startInfoFileContent = new StartFileContent(url, fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
+            StartInfoFile startInfoFileContent = new StartInfoFile(url, fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
             try {
                 Files.write(startInfoFilePath, startInfoFileContent.toString().getBytes());
             } catch (IOException e) {

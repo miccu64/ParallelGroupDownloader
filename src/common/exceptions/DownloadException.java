@@ -1,4 +1,4 @@
-package common;
+package common.exceptions;
 
 public class DownloadException extends Exception {
     public DownloadException(Exception e) {

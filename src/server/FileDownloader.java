@@ -1,6 +1,6 @@
 package server;
 
-import common.DownloadException;
+import common.exceptions.DownloadException;
 import common.udp.FileInfoHolder;
 
 import java.io.File;

@@ -1,6 +1,6 @@
 package common.udp;
 
-import common.DownloadException;
+import common.exceptions.DownloadException;
 
 import java.io.BufferedReader;
 import java.io.IOException;

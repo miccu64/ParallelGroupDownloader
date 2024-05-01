@@ -1,8 +1,9 @@
 package client;
 
-import common.DownloadException;
-import common.parser.EndFileContent;
-import common.parser.StartFileContent;
+import common.exceptions.DownloadException;
+import common.exceptions.InfoFileException;
+import common.parser.EndInfoFile;
+import common.parser.StartInfoFile;
 import common.udp.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
@@ -27,34 +28,35 @@ public class ClientMainThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        int result = 1;
         UdpcastService udpcastService = new ClientUdpcastService(9000);
-
-        int partCount = 0;
-
         try {
-            processStartFile();
-            String fileName = "todo";
+            String fileName = processStartFile();
 
+            int partCount = 0;
             boolean downloadInProgress = true;
             while (downloadInProgress) {
                 Path filePart = createFilePartPath(fileName, partCount);
                 processedFiles.add(filePart);
                 udpcastService.processFile(filePart);
+                partCount++;
 
-                if (canBeInfoFile(filePart)) {
-                    EndFileContent endFileContent = new EndFileContent(filePart);
-
+                try {
+                    EndInfoFile endInfoFile = new EndInfoFile(filePart);
                     // TODO: change file name, add to array, check CRCs and join files
                     downloadInProgress = false;
+                } catch (InfoFileException ignored) {
+                    // TODO: avoid infinite loop
                 }
             }
+            result = 0;
         } catch (DownloadException e) {
-            return 1;
+            System.out.println("Exiting...");
         } finally {
             FilePartUtils.removeFiles(processedFiles);
         }
 
-        return 0;
+        return result;
     }
 
     private String processStartFile() throws DownloadException {
@@ -62,37 +64,21 @@ public class ClientMainThread implements Callable<Integer> {
         processedFiles.add((startInfoFilePath));
         udpcastService.processFile(startInfoFilePath);
 
-        if (canBeInfoFile(startInfoFilePath)) {
-            StartFileContent startFileContent = new StartFileContent(startInfoFilePath);
-            System.out.println("Download started. Url: " + startFileContent.url + ", file name: " + startFileContent.fileName);
-            if (startFileContent.fileSizeInMB == 0) {
-                System.out.println("Not known file size - program will try download it anyway.");
-            } else {
-                System.out.println("Expected file size: " + startFileContent.fileSizeInMB);
-            }
-
-            if (!PrepareDownloadUtils.checkFreeSpace(startFileContent.fileSizeInMB)) {
+        StartInfoFile startInfoFile = new StartInfoFile(startInfoFilePath);
+        System.out.println("Download started. Url: " + startInfoFile.url + ", file name: " + startInfoFile.fileName);
+        if (startInfoFile.fileSizeInMB == 0) {
+            System.out.println("Not known file size - program will try download it anyway.");
+        } else {
+            System.out.println("Expected file size: " + startInfoFile.fileSizeInMB);
+            if (!PrepareDownloadUtils.checkFreeSpace(startInfoFile.fileSizeInMB)) {
                 throw new DownloadException("Not enough free space. Exiting...");
             }
-
-            return startFileContent.fileName;
-        } else {
-            throw new DownloadException("Received file not being config file as first file. Exiting...");
         }
+
+        return startInfoFile.fileName;
     }
 
     private Path createFilePartPath(String fileName, int partCount) {
         return Paths.get(downloadPath, fileName + ".part" + partCount);
-    }
-
-    private boolean canBeInfoFile(Path file) throws DownloadException {
-        try {
-            long fileSizeInBytes = Files.size(file);
-            int oneMBAsBytes = 1000000;
-
-            return fileSizeInBytes < oneMBAsBytes;
-        } catch (IOException e) {
-            throw new DownloadException(e);
-        }
     }
 }

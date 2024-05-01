@@ -1,4 +1,4 @@
-import common.DownloadException;
+import common.exceptions.DownloadException;
 import common.utils.PrepareDownloadUtils;
 
 public class Main {

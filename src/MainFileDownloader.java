@@ -1,6 +1,5 @@
-import common.DownloadException;
+import common.exceptions.DownloadException;
 import common.utils.PrepareDownloadUtils;
-import server.FileDownloader;
 
 import java.net.MalformedURLException;
 import java.net.URL;
