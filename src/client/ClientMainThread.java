@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -25,7 +26,6 @@ public class ClientMainThread implements Callable<Integer> {
         this.udpcastService = udpcastService;
     }
 
-
     @Override
     public Integer call() {
         int result = 1;
@@ -34,20 +34,15 @@ public class ClientMainThread implements Callable<Integer> {
             String fileName = processStartFile();
 
             int partCount = 0;
-            boolean downloadInProgress = true;
-            while (downloadInProgress) {
+            boolean gotEndInfo = false;
+            while (!gotEndInfo) {
                 Path filePart = createFilePartPath(fileName, partCount);
                 processedFiles.add(filePart);
                 udpcastService.processFile(filePart);
                 partCount++;
 
-                try {
-                    EndInfoFile endInfoFile = new EndInfoFile(filePart);
-                    // TODO: change file name, add to array, check CRCs and join files
-                    downloadInProgress = false;
-                } catch (InfoFileException ignored) {
-                    // TODO: avoid infinite loop
-                }
+                // TODO: avoid infinite loop
+                gotEndInfo = tryProcessEndFile(filePart);
             }
             result = 0;
         } catch (DownloadException e) {
@@ -76,6 +71,25 @@ public class ClientMainThread implements Callable<Integer> {
         }
 
         return startInfoFile.fileName;
+    }
+
+    private boolean tryProcessEndFile(Path filePart) throws DownloadException {
+        try {
+            EndInfoFile endInfoFile = new EndInfoFile(filePart);
+            Path endFilePath = Paths.get(downloadPath, "endInfo.txt");
+            processedFiles.add(endFilePath);
+            try {
+                Files.move(filePart, endFilePath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new DownloadException(e);
+            }
+            processedFiles.remove(filePart);
+
+            // TODO: check CRCs and join files
+            return true;
+        } catch (InfoFileException ignored) {
+            return false;
+        }
     }
 
     private Path createFilePartPath(String fileName, int partCount) {
