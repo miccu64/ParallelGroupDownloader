@@ -1,5 +1,7 @@
 package common.utils;
 
+import common.exceptions.DownloadException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,6 +12,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 public class FilePartUtils {
@@ -22,7 +25,7 @@ public class FilePartUtils {
         }
     }
 
-    public static boolean joinAndDeleteFileParts(List<Path> fileParts) {
+    public static void joinAndDeleteFileParts(List<Path> fileParts) throws DownloadException {
         String finalFileName = fileParts.get(0).getFileName().toString().replaceFirst("[.][^.]+$", "");
         Path savePath = Paths.get(String.valueOf(fileParts.get(0).getParent()), finalFileName);
 
@@ -31,16 +34,15 @@ public class FilePartUtils {
             for (Path filePart : fileParts) {
                 System.out.println(filePart);
                 Files.copy(filePart, out);
+                removeFiles(Collections.singletonList(filePart));
             }
         } catch (IOException e) {
-            return handleException(e, "Error while joining parts of file", fileParts);
+            removeFiles(fileParts);
+            throw new DownloadException(e, "Error while joining parts of file");
         }
-
-        removeFiles(fileParts);
-        return true;
     }
 
-    public static String fileChecksum(Path filePath) {
+    public static String fileChecksum(Path filePath) throws DownloadException {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             try (InputStream is = Files.newInputStream(filePath);
@@ -49,19 +51,7 @@ public class FilePartUtils {
                 return Base64.getEncoder().encodeToString(checksum);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
-            handleException(e, "Could not create file checksum", null);
-            return "";
+            throw new DownloadException(e, "Could not create file checksum");
         }
-    }
-
-    private static boolean handleException(Exception e, String message, List<Path> fileParts) {
-        System.out.println(message);
-        e.printStackTrace(System.out);
-
-        if (fileParts != null) {
-            removeFiles(fileParts);
-        }
-
-        return false;
     }
 }

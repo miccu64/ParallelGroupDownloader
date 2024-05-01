@@ -2,11 +2,16 @@ package common.parser;
 
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
+import common.utils.FilePartUtils;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class EndInfoFile extends InfoFile {
+    public final Path filePath;
+
     private final List<String> checksums;
     private final String separator = "#!_@%&_#";
 
@@ -14,20 +19,29 @@ public class EndInfoFile extends InfoFile {
         return checksums;
     }
 
-    public EndInfoFile(List<String> checksums) throws DownloadException {
-        if (checksums == null || checksums.isEmpty()) {
-            throw new DownloadException("No checksums are given.");
+    public EndInfoFile(String saveDirectory, List<Path> files) throws DownloadException {
+        if (files.isEmpty()) {
+            throw new DownloadException("No files to process are given.");
         }
 
+        ArrayList<String> checksums = new ArrayList<>();
+        for (Path file : files) {
+            String s = FilePartUtils.fileChecksum(file);
+            checksums.add(s);
+        }
         this.checksums = checksums;
+
+        filePath = Paths.get(saveDirectory, "endInfo.txt");
+        saveToFile(filePath);
     }
 
     public EndInfoFile(Path filePath) throws DownloadException, InfoFileException {
+        this.filePath = filePath;
+
         List<String> values = tryGetInfo(filePath, separator);
         if (values.isEmpty()) {
             throw new InfoFileException(this.errorText + filePath);
         }
-
         this.checksums = values;
     }
 

@@ -1,7 +1,8 @@
 package server;
 
+import common.StatusEnum;
 import common.exceptions.DownloadException;
-import common.udp.FileInfoHolder;
+import common.utils.FilePartUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,27 +13,34 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
-public class FileDownloader implements Runnable {
+public class FileDownloader implements Callable<StatusEnum> {
+    private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
     private final int blockSize;
     private final long fileSizeInMB;
-    private final FileInfoHolder fileInfoHolder;
     private final Path filePath;
     private final String fileName;
     private final URL url;
 
+    public List<Path> getProcessedFiles() {
+        return new ArrayList<>(processedFiles);
+    }
+
     public long getFileSizeInMB() {
         return fileSizeInMB;
     }
+
     public String getFileName() {
         return fileName;
     }
 
-    public FileDownloader(String url, int blockSizeInMB, FileInfoHolder fileInfoHolder) throws DownloadException {
-        this.fileInfoHolder = fileInfoHolder;
-
+    public FileDownloader(String url, int blockSizeInMB) throws DownloadException {
         try {
             URI uri = new URI(url);
             this.url = uri.toURL();
@@ -47,7 +55,7 @@ public class FileDownloader implements Runnable {
     }
 
     @Override
-    public void run() {
+    public StatusEnum call() {
         int blockNumber = 0;
         long transferredCount;
 
@@ -62,23 +70,24 @@ public class FileDownloader implements Runnable {
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
                 } catch (SecurityException | IOException e) {
-                    handleDownloadError(e, "Cannot save to file: " + partFile);
-                    return;
+                    return handleDownloadError(e, "Cannot save to file: " + partFile);
                 }
 
-                fileInfoHolder.filesToProcess.add(filePartPath);
+                processedFiles.add(filePartPath);
             } while (transferredCount == blockSize);
         } catch (IOException e) {
-            handleDownloadError(e, "Cannot open given URL. Download aborted");
+            return handleDownloadError(e, "Cannot open given URL. Download aborted");
         }
+
+        return StatusEnum.Success;
     }
 
-    private void handleDownloadError(Exception e, String message) {
+    private StatusEnum handleDownloadError(Exception e, String message) {
         System.out.println(message);
         e.printStackTrace(System.out);
 
-        // TODO: clean downloaded files
-        fileInfoHolder.setErrorStatus();
+        FilePartUtils.removeFiles(new ArrayList<>(processedFiles));
+        return StatusEnum.Error;
     }
 
     private String getFileNameFromUrl(URI uri) {

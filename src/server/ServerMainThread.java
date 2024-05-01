@@ -1,75 +1,132 @@
 package server;
 
+import common.StatusEnum;
 import common.exceptions.DownloadException;
+import common.parser.EndInfoFile;
 import common.parser.StartInfoFile;
-import common.udp.FileInfoHolder;
 import common.udp.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-public class ServerMainThread implements Callable<Integer> {
+public class ServerMainThread {
     private final String downloadPath = PrepareDownloadUtils.serverDownloadPath.toString();
     private final String url;
+    private final UdpcastService udpcastService;
+    private final ArrayList<Path> processedFiles;
+
+    private int processedPartsCount = 0;
+    private Path startFilePath;
+    private Path endFilePath;
 
     public ServerMainThread(String url) {
         this.url = url;
+        udpcastService = new ServerUdpcastService(9000);
+        processedFiles = new ArrayList<>();
     }
 
-    @Override
-    public Integer call() {
-        int result;
-        FileInfoHolder fileInfoHolder = new FileInfoHolder();
-        ArrayList<Path> processedFiles = new ArrayList<>();
-
-        Thread fileDownloaderThread = null;
+    public StatusEnum doWork() {
+        StatusEnum result;
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<StatusEnum> fileDownloaderFuture = null;
         try {
-            FileDownloader fileDownloader = new FileDownloader(url, 1, fileInfoHolder);
-            fileDownloaderThread = new Thread(fileDownloader);
-            fileDownloaderThread.start();
+            FileDownloader fileDownloader = new FileDownloader(url, 1);
+            fileDownloaderFuture = executorService.submit(fileDownloader);
 
-            Path startInfoFilePath = Paths.get(downloadPath, "startInfo.txt");
-            processedFiles.add(startInfoFilePath);
-            StartInfoFile startInfoFileContent = new StartInfoFile(url, fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
-            try {
-                Files.write(startInfoFilePath, startInfoFileContent.toString().getBytes());
-            } catch (IOException e) {
-                throw new DownloadException(e, "Could not save file: " + startInfoFilePath);
-            }
+            processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
 
-            UdpcastService udpcastService = new ServerUdpcastService(9000);
-            udpcastService.processFile(startInfoFilePath);
+            do {
+                Path fileToProcess = tryGetUnprocessedFile(fileDownloader.getProcessedFiles());
+                if (fileToProcess == null) {
+                    sleep();
+                } else {
+                    processFilePart(fileToProcess);
+                }
+            } while (!fileDownloaderFuture.isDone());
 
-            boolean downloadInProgress = true;
-            while (fileInfoHolder.isInProgress()) {
-                // TODO: check if is final part - if yes, end loop, change file name, add to array, check CRCs and join files
-            }
+            checkFileDownloaderSuccess(fileDownloaderFuture);
+            processRemainingParts(fileDownloader.getProcessedFiles());
+            processEndFile();
 
-            if (fileInfoHolder.isSuccess()) {
-                result = 0;
-            } else {
-                result = 1;
-            }
+            FilePartUtils.joinAndDeleteFileParts(processedFiles);
+
+            result = StatusEnum.Success;
         } catch (DownloadException e) {
-            if (fileDownloaderThread != null && fileDownloaderThread.isAlive()) {
-                fileDownloaderThread.interrupt();
+            if (fileDownloaderFuture != null && !fileDownloaderFuture.isDone()) {
+                fileDownloaderFuture.cancel(true);
             }
+            executorService.shutdown();
 
-            result = 1;
+            result = StatusEnum.Error;
         } finally {
+            if (startFilePath != null) {
+                processedFiles.add(startFilePath);
+            }
+            if (endFilePath != null) {
+                processedFiles.add(endFilePath);
+            }
             FilePartUtils.removeFiles(processedFiles);
         }
 
         return result;
     }
 
-    private Path createFilePartPath(String fileName, int partCount) {
-        return Paths.get(downloadPath, fileName + ".part" + partCount);
+    private void processStartFile(String fileName, long fileSizeInMB) throws DownloadException {
+        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB);
+        startFilePath = startInfoFile.filePath;
+        udpcastService.processFile(startFilePath);
+    }
+
+    private Path tryGetUnprocessedFile(List<Path> fileDownloaderProcessedFiles) {
+        try {
+            return fileDownloaderProcessedFiles.get(processedPartsCount);
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void processFilePart(Path filePath) throws DownloadException {
+        processedFiles.add(filePath);
+        udpcastService.processFile(filePath);
+        processedPartsCount++;
+    }
+
+    private void checkFileDownloaderSuccess(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
+        try {
+            StatusEnum fileDownloaderStatus = fileDownloaderFuture.get();
+            if (fileDownloaderStatus != StatusEnum.Success) {
+                throw new DownloadException("File downloader error.");
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new DownloadException(e);
+        }
+    }
+
+    private void processRemainingParts(List<Path> fileDownloaderProcessedFiles) throws DownloadException {
+        Path fileToProcess;
+        while ((fileToProcess = tryGetUnprocessedFile(fileDownloaderProcessedFiles)) != null) {
+            processFilePart(fileToProcess);
+        }
+    }
+
+    private void processEndFile() throws DownloadException {
+        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, processedFiles);
+        endFilePath = endInfoFile.filePath;
+        udpcastService.processFile(endFilePath);
     }
 }

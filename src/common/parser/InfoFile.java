@@ -13,6 +13,14 @@ import java.util.stream.Collectors;
 public abstract class InfoFile {
     protected final String errorText = "Given file is not proper end file. Path: ";
 
+    protected void saveToFile(Path filePath) throws DownloadException {
+        try {
+            Files.write(filePath, toString().getBytes());
+        } catch (IOException e) {
+            throw new DownloadException(e, "Could not save file: " + filePath);
+        }
+    }
+
     protected List<String> tryGetInfo(Path filePath, String separator) throws DownloadException, InfoFileException {
         try {
             long fileSizeInBytes = Files.size(filePath);
