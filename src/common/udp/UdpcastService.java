@@ -43,7 +43,7 @@ public abstract class UdpcastService {
     }
 
     public void processFile(Path filePath) throws DownloadException {
-        String command = udpcastRunCommand + " --file " + filePath.toString();
+        String command = udpcastRunCommand + " --file " + filePath.toAbsolutePath();
         List<String> params;
         if (isWindows) {
             params = Arrays.asList("cmd.exe", "/c", command);
@@ -68,7 +68,7 @@ public abstract class UdpcastService {
                 process.destroy();
             }
 
-            throw new DownloadException(e, "Could not send/receive file: " + filePath);
+            throw new DownloadException(e, "Could not send/receive file: " + filePath.toAbsolutePath());
         }
     }
 

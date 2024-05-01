@@ -38,7 +38,7 @@ public class ClientLogic implements ILogic {
             EndInfoFile endInfoFile = null;
             int partCount = 0;
             while (endInfoFile == null) {
-                Path filePart = createFilePartPath(fileName, partCount);
+                Path filePart = generateFilePartPath(fileName, partCount);
                 processedFiles.add(filePart);
                 udpcastService.processFile(filePart);
                 partCount++;
@@ -102,7 +102,7 @@ public class ClientLogic implements ILogic {
         }
     }
 
-    private Path createFilePartPath(String fileName, int partCount) {
+    private Path generateFilePartPath(String fileName, int partCount) {
         return Paths.get(downloadPath, fileName + ".part" + partCount);
     }
 

@@ -4,11 +4,13 @@ import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class InfoFile {
     protected final String errorText = "Given file is not proper end file. Path: ";
@@ -29,12 +31,15 @@ public abstract class InfoFile {
                 throw new InfoFileException("Improper file size.");
             }
 
-            List<String> lines = Files.readAllLines(filePath);
-            if (lines.size() != 1) {
+            long lineCount;
+            try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8)) {
+                lineCount = stream.count();
+            }
+            if (lineCount != 1) {
                 throw new InfoFileException("Too much lines.");
             }
 
-            String line = lines.get(0);
+            String line = Files.readAllLines(filePath).get(0);
             if (!line.startsWith(separator) || !line.endsWith(separator)) {
                 throw new InfoFileException("Improper file format.");
             }
@@ -42,7 +47,7 @@ public abstract class InfoFile {
             return Arrays.stream(line.split(separator))
                     .filter(value -> !value.isEmpty())
                     .collect(Collectors.toList());
-        } catch (IOException e) {
+        } catch (IOException | IndexOutOfBoundsException e) {
             throw new DownloadException(e, errorText);
         }
     }
