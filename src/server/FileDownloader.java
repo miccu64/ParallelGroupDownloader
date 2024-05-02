@@ -46,7 +46,7 @@ public class FileDownloader implements Callable<StatusEnum> {
             this.url = uri.toURL();
             fileName = getFileNameFromUrl(uri);
             filePath = Paths.get(String.valueOf(serverDownloadPath), fileName);
-        } catch (MalformedURLException | URISyntaxException e) {
+        } catch (IllegalArgumentException | MalformedURLException | URISyntaxException e) {
             throw new DownloadException(e, "Malformed URL");
         }
 

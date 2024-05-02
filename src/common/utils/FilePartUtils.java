@@ -28,11 +28,10 @@ public class FilePartUtils {
         }
     }
 
-    public static void joinAndRemoveFileParts(List<Path> fileParts) throws DownloadException {
+    public static Path joinAndRemoveFileParts(List<Path> fileParts) throws DownloadException {
         String finalFileName = fileParts.get(0).getFileName().toString().replaceFirst("[.][^.]+$", "");
         Path savePath = Paths.get(String.valueOf(fileParts.get(0).getParent()), finalFileName);
 
-        System.out.println(savePath);
         try (OutputStream out = Files.newOutputStream(savePath)) {
             for (Path filePart : fileParts) {
                 System.out.println(filePart);
@@ -43,6 +42,8 @@ public class FilePartUtils {
             removeFiles(fileParts);
             throw new DownloadException(e, "Error while joining parts of file");
         }
+
+        return savePath;
     }
 
     public static String fileChecksum(Path filePath) throws DownloadException {
