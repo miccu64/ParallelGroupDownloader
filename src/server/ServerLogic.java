@@ -5,7 +5,7 @@ import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.parser.EndInfoFile;
 import common.parser.StartInfoFile;
-import common.udp.UdpcastService;
+import common.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 

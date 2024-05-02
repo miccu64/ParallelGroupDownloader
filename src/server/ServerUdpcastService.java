@@ -1,7 +1,7 @@
 package server;
 
 import common.exceptions.DownloadException;
-import common.udp.UdpcastService;
+import common.UdpcastService;
 
 import java.nio.file.Path;
 import java.util.HashMap;

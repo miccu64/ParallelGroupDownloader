@@ -1,4 +1,4 @@
-package common.udp;
+package common;
 
 import common.exceptions.DownloadException;
 
@@ -20,6 +20,7 @@ public abstract class UdpcastService {
         if (isWindows) {
             programName += ".exe";
         }
+
         if (udpcastPath != null) {
             Path executablePath = Paths.get(udpcastPath, programName);
             if (!Files.exists(executablePath)) {
@@ -29,6 +30,8 @@ public abstract class UdpcastService {
         } else {
             this.udpcastPath = null;
         }
+
+        checkUdpcastPacketPresence(programName);
 
         StringBuilder commandBuilder = new StringBuilder(programName);
         for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -45,34 +48,15 @@ public abstract class UdpcastService {
 
     public void processFile(Path filePath) throws DownloadException {
         String command = udpcastRunCommand + " --file \"" + filePath.toAbsolutePath() + "\"";
-        List<String> params;
-        if (isWindows) {
-            params = Arrays.asList("cmd.exe", "/c", command);
-        } else {
-            params = Arrays.asList("/bin/bash", "-c", command);
-        }
-
-        System.out.println("Starting " + command);
-        ProcessBuilder processBuilder = new ProcessBuilder(params).redirectErrorStream(true)
-                .directory(this.udpcastPath);
+        ProcessBuilder processBuilder = prepareProcessBuilder(command);
         Process process = null;
         try {
             process = processBuilder.start();
+            getProcessOutput(process);
 
-            try (InputStream is = process.getInputStream();
-                 InputStreamReader isReader = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isReader)) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                    System.out.flush();
-                }
-            }
-
-            boolean r = process.waitFor(1, TimeUnit.SECONDS);
+            process.waitFor(1, TimeUnit.SECONDS);
             int exitCode = process.exitValue();
             System.out.println("Process exited with code: " + exitCode);
-            System.out.println("Process exited: " + command);
             if (exitCode != 0) {
                 throw new IOException("Error: exit code=" + exitCode);
             }
@@ -82,6 +66,46 @@ public abstract class UdpcastService {
             if (process != null) {
                 process.destroy();
             }
+        }
+    }
+
+    private ProcessBuilder prepareProcessBuilder(String command) {
+        List<String> params;
+        if (isWindows) {
+            params = Arrays.asList("cmd.exe", "/c", command);
+        } else {
+            params = Arrays.asList("/bin/bash", "-c", command);
+        }
+
+        return new ProcessBuilder(params).redirectErrorStream(true)
+                .directory(this.udpcastPath);
+    }
+
+    private void getProcessOutput(Process process) throws IOException {
+        try (InputStream is = process.getInputStream();
+             InputStreamReader isReader = new InputStreamReader(is);
+             BufferedReader reader = new BufferedReader(isReader)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+                System.out.flush();
+            }
+        }
+    }
+
+    private void checkUdpcastPacketPresence(String programName) throws DownloadException {
+        String errorText = "UDPcast packet is not present in system or given directory. "
+                + "Linux: install via 'sudo apt install udpcast'. "
+                + "Windows: download it from https://www.udpcast.linux.lu/";
+        try {
+            Process process = prepareProcessBuilder(programName + " --license").start();
+            process.waitFor(3, TimeUnit.SECONDS);
+            int result = process.exitValue();
+            if (result != 0) {
+                throw new DownloadException(errorText);
+            }
+        } catch (IOException | InterruptedException | IllegalThreadStateException e) {
+            throw new DownloadException(e, errorText);
         }
     }
 }
