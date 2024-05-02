@@ -37,16 +37,14 @@ public class ServerLogic implements ILogic {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<StatusEnum> fileDownloaderFuture = null;
         try {
-            FileDownloader fileDownloader = new FileDownloader(url, 1);
+            FileDownloader fileDownloader = new FileDownloader(url, 6);
             fileDownloaderFuture = executorService.submit(fileDownloader);
 
             processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
 
             do {
                 Path fileToProcess = tryGetUnprocessedFile(fileDownloader.getProcessedFiles());
-                if (fileToProcess == null) {
-                    sleep();
-                } else {
+                if (fileToProcess != null) {
                     processFilePart(fileToProcess);
                 }
             } while (!fileDownloaderFuture.isDone());
@@ -89,14 +87,6 @@ public class ServerLogic implements ILogic {
             return fileDownloaderProcessedFiles.get(processedPartsCount);
         } catch (IndexOutOfBoundsException e) {
             return null;
-        }
-    }
-
-    private void sleep() {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 
