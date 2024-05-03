@@ -1,3 +1,5 @@
+package server;
+
 import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.utils.FilePartUtils;
@@ -6,7 +8,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import server.FileDownloader;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,10 +96,10 @@ public class DownloaderTests {
 
         Path firstPart = fileDownloader.getProcessedFiles().get(0);
         long sizeInBytes = Files.size(firstPart);
-        float sizeInMB = (float) sizeInBytes / (1024 * 1024);
+        float fileSizeInMB = (float) sizeInBytes / (1024 * 1024);
 
         // Assert
-        Assertions.assertEquals(sizeInMB, blockSizeInMB);
+        Assertions.assertEquals(blockSizeInMB, fileSizeInMB);
     }
 
     @Test
@@ -149,6 +150,50 @@ public class DownloaderTests {
     }
 
     @Test
+    public void shouldReturnProperFileNameFromLocalFile() throws IOException, DownloadException {
+        // Arrange
+        String expectedFileName = "shouldReturnProperFileNameFromLocalFile";
+        Path filePathToDownload = generateFile(expectedFileName, 1);
+        filesToDelete.add(filePathToDownload);
+
+        URL url = filePathToDownload.toUri().toURL();
+
+        // Act
+        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
+        String fileName = fileDownloader.getFileName();
+
+        // Assert
+        Assertions.assertEquals(expectedFileName, fileName);
+    }
+
+    @Test
+    public void shouldReturnProperFileNameFromUrl() throws IOException, DownloadException {
+        // Arrange
+        String expectedFileName = "file.txt";
+        String url = "http://not-existing-url-32176573546.pl/" + expectedFileName;
+
+        // Act
+        FileDownloader fileDownloader = new FileDownloader(url, 1);
+        String fileName = fileDownloader.getFileName();
+
+        // Assert
+        Assertions.assertEquals(expectedFileName, fileName);
+    }
+
+    @Test
+    public void shouldNotReturnSizeWhenCannotGetIt() throws DownloadException {
+        // Arrange
+        String url = "http://not-existing-url-32176573546.pl/file.txt";
+
+        // Act
+        FileDownloader fileDownloader = new FileDownloader(url, 1);
+        long size = fileDownloader.getFileSizeInMB();
+
+        // Assert
+        Assertions.assertEquals(-1, size);
+    }
+
+    @Test
     public void shouldThrowWhenFileNotExists() throws MalformedURLException, DownloadException {
         // Arrange
         Path notExistingFile = Paths.get("shouldThrowWhenFileNotExists.file").toAbsolutePath();
@@ -162,16 +207,48 @@ public class DownloaderTests {
         StatusEnum result = fileDownloader.call();
 
         // Assert
-        Assertions.assertEquals(result, StatusEnum.Error);
+        Assertions.assertEquals(StatusEnum.Error, result);
     }
 
     @Test
-    public void shouldThrowWhenIsNotProperUrl() {
+    public void shouldThrowWhenIsMalformedLocalFileUrl() {
         // Arrange
-        String malformedUrl = Paths.get("shouldThrowWhenIsNotProperUrl.file").toString();
+        String malformedUrl = Paths.get("shouldThrowWhenIsMalformedLocalFileUrl.file").toString();
 
         // Act
         Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader(malformedUrl, 1));
+    }
+
+    @Test
+    public void shouldReturnErrorWhenUrlDoesNotExist() throws DownloadException {
+        // Arrange
+        String malformedUrl = "http://not-existing-url-32176573546.pl/file.txt";
+
+        // Act
+        StatusEnum status = new FileDownloader(malformedUrl, 1).call();
+
+        // Assert
+        Assertions.assertEquals(StatusEnum.Error, status);
+    }
+
+    @Test
+    public void shouldThrowWhenUrlIsNull() {
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader(null, 1));
+    }
+
+    @Test
+    public void shouldThrowWhenUrlIsEmpty() {
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", 1));
+    }
+
+    @Test
+    public void shouldThrowWhenBlockSizeEqualsZero() {
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", 0));
+    }
+
+    @Test
+    public void shouldThrowWhenBlockSizeIsLowerThanZero() {
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", -1));
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {

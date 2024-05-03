@@ -42,13 +42,21 @@ public class FileDownloader implements Callable<StatusEnum> {
     }
 
     public FileDownloader(String url, int blockSizeInMB) throws DownloadException {
+        if (url == null || url.isEmpty()) {
+            throw new DownloadException("Empty url.");
+        }
+
+        if (blockSizeInMB < 1) {
+            throw new DownloadException("Improper block size.");
+        }
+
         try {
             URI uri = new URI(url);
             this.url = uri.toURL();
             fileName = getFileNameFromUrl(uri);
             filePath = Paths.get(String.valueOf(serverDownloadPath), fileName);
         } catch (IllegalArgumentException | MalformedURLException | URISyntaxException e) {
-            throw new DownloadException(e, "Malformed URL");
+            throw new DownloadException(e, "Malformed URL.");
         }
 
         blockSize = blockSizeInMB * 1024 * 1024;

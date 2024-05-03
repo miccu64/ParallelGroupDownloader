@@ -1,4 +1,4 @@
-package common.parser;
+package common.infos;
 
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
