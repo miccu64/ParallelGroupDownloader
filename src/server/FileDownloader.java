@@ -7,6 +7,7 @@ import common.utils.FilePartUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -59,7 +60,8 @@ public class FileDownloader implements Callable<StatusEnum> {
         int blockNumber = 0;
         long transferredCount;
 
-        try (ReadableByteChannel channel = Channels.newChannel(this.url.openStream())) {
+        try (InputStream inputStream = this.url.openStream();
+             ReadableByteChannel channel = Channels.newChannel(inputStream)) {
             System.out.println("Download started! Url: " + url);
 
             do {
@@ -67,7 +69,8 @@ public class FileDownloader implements Callable<StatusEnum> {
                 File partFile = filePartPath.toFile();
                 blockNumber++;
 
-                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile); FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
+                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
+                     FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
                 } catch (SecurityException | IOException e) {
                     return handleDownloadError(e, "Cannot save to file: " + partFile);
@@ -104,8 +107,9 @@ public class FileDownloader implements Callable<StatusEnum> {
     private long findFileSizeInMB() {
         long fileSize = -1;
 
+        URLConnection urlConnection = null;
         try {
-            URLConnection urlConnection = url.openConnection();
+            urlConnection = url.openConnection();
             if (urlConnection instanceof HttpURLConnection) {
                 HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
                 httpURLConnection.setRequestMethod("HEAD");
@@ -118,7 +122,18 @@ public class FileDownloader implements Callable<StatusEnum> {
                 fileSize = (long) Math.ceil((double) fileSize / (double) (1024 * 1024));
             }
         } catch (IOException ignored) {
-            System.out.println("Could not determine file size");
+            System.out.println("Could not determine file size.");
+        } finally {
+            if (urlConnection != null) {
+                if (urlConnection instanceof HttpURLConnection) {
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
+                    httpURLConnection.disconnect();
+                }
+                try {
+                    urlConnection.getInputStream().close();
+                } catch (IOException ignored) {
+                }
+            }
         }
 
         return fileSize;
