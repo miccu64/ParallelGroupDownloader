@@ -67,7 +67,6 @@ public class DownloaderTests {
         // Arrange
         String fileName = "shouldDivideDownloadedFileWithExactPartSize";
         Path filePathToDownload = generateFile(fileName, 3);
-        filesToDelete.add(filePathToDownload);
 
         URL url = filePathToDownload.toUri().toURL();
         int blockSizeInMB = 1;
@@ -92,7 +91,6 @@ public class DownloaderTests {
         // Arrange
         String fileName = "shouldPartSummarySizeEqualJoinedSize";
         Path filePathToDownload = generateFile(fileName, 5);
-        filesToDelete.add(filePathToDownload);
 
         URL url = filePathToDownload.toUri().toURL();
 
@@ -121,7 +119,6 @@ public class DownloaderTests {
         // Arrange
         String fileName = "shouldFileDownloaderGetProperLocalFileSize";
         Path filePathToDownload = generateFile(fileName, 1);
-        filesToDelete.add(filePathToDownload);
 
         int expectedSize = (int) Math.ceil((double) Files.size(filePathToDownload) / (double) (1024 * 1024));
         URL url = filePathToDownload.toUri().toURL();
@@ -139,7 +136,6 @@ public class DownloaderTests {
         // Arrange
         String expectedFileName = "shouldReturnProperFileNameFromLocalFile";
         Path filePathToDownload = generateFile(expectedFileName, 1);
-        filesToDelete.add(filePathToDownload);
 
         URL url = filePathToDownload.toUri().toURL();
 
@@ -232,6 +228,8 @@ public class DownloaderTests {
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {
-        return CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
+        Path path = CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
+        filesToDelete.add(path);
+        return path;
     }
 }

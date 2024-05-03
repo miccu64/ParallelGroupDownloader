@@ -38,7 +38,6 @@ public class EndInfoFileTests {
         ArrayList<Path> files = new ArrayList<>();
         files.add(generateFile("shouldGenerateProperChecksums1", 1));
         files.add(generateFile("shouldGenerateProperChecksums2", 2));
-        filesToDelete.addAll(files);
 
         ArrayList<String> expectedChecksums = new ArrayList<>();
         for (Path path: files) {
@@ -62,7 +61,6 @@ public class EndInfoFileTests {
         ArrayList<Path> files = new ArrayList<>();
         files.add(generateFile("shouldSaveChecksumsToFile1", 1));
         files.add(generateFile("shouldSaveChecksumsToFile2", 2));
-        filesToDelete.addAll(files);
 
         Path currentTestDirectory = Paths.get(testDirectory, "shouldSaveChecksumsToFile");
         Files.createDirectories(currentTestDirectory);
@@ -113,6 +111,8 @@ public class EndInfoFileTests {
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {
-        return CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
+        Path path = CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
+        filesToDelete.add(path);
+        return path;
     }
 }

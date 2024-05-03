@@ -29,6 +29,13 @@ public class FilePartUtils {
     }
 
     public static Path joinAndRemoveFileParts(List<Path> fileParts) throws DownloadException {
+        if (fileParts == null || fileParts.isEmpty()) {
+            throw new DownloadException("Empty file parts list.");
+        }
+        if (fileParts.stream().anyMatch(file -> !file.toString().contains(".part"))) {
+            throw new DownloadException("Not all files contains '.part' in path.");
+        }
+
         String finalFileName = fileParts.get(0).getFileName().toString().replaceFirst("[.][^.]+$", "");
         Path savePath = Paths.get(String.valueOf(fileParts.get(0).getParent()), finalFileName);
 
@@ -40,13 +47,17 @@ public class FilePartUtils {
             }
         } catch (IOException e) {
             removeFiles(fileParts);
-            throw new DownloadException(e, "Error while joining parts of file");
+            throw new DownloadException(e, "Error while joining parts of file.");
         }
 
         return savePath;
     }
 
     public static String fileChecksum(Path filePath) throws DownloadException {
+        if (filePath.toFile().length() < 1) {
+            throw new DownloadException("Empty file.");
+        }
+
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             try (InputStream is = Files.newInputStream(filePath);
@@ -55,7 +66,7 @@ public class FilePartUtils {
                 return Base64.getEncoder().encodeToString(checksum);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
-            throw new DownloadException(e, "Could not create file checksum");
+            throw new DownloadException(e, "Could not create file checksum.");
         }
     }
 }
