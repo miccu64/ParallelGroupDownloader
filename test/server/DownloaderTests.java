@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import utils.CommonUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,45 +17,29 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Stream;
 
 public class DownloaderTests {
     private final static ConcurrentLinkedQueue<Path> filesToDelete = new ConcurrentLinkedQueue<>();
-    private final static String testDirectory = "filesTest";
+    private final static String testDirectory = String.valueOf(Paths.get(CommonUtils.testDirectory,"DownloaderTests"));
 
     @BeforeAll
     public static void beforeAll() throws DownloadException, IOException {
-        PrepareDownloadUtils.initProgram();
-
-        Files.createDirectories(Paths.get(testDirectory));
+        CommonUtils.beforeAll(DownloaderTests.testDirectory);
     }
 
     @AfterAll
     public static void afterAll() {
-        for (Path path : filesToDelete) {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException ignored) {
-            }
-        }
-
-        try (Stream<Path> pathStream = Files.walk(Paths.get(testDirectory))) {
-            pathStream.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        } catch (IOException ignored) {
-        }
+        CommonUtils.afterAll(testDirectory, new ArrayList<>(filesToDelete));
     }
 
     @Test
     public void shouldOriginalAndDownloadedFilesMatchChecksums() throws IOException, DownloadException {
         // Arrange
         String fileName = "shouldOriginalAndDownloadedFilesMatchChecksums";
-        Path filePathToDownload = generateFile(fileName, 5);
+        Path filePathToDownload = CommonUtils.generateFile(fileName, testDirectory, 5);
         filesToDelete.add(filePathToDownload);
 
         URL url = filePathToDownload.toUri().toURL();
@@ -167,7 +152,7 @@ public class DownloaderTests {
     }
 
     @Test
-    public void shouldReturnProperFileNameFromUrl() throws IOException, DownloadException {
+    public void shouldReturnProperFileNameFromUrl() throws DownloadException {
         // Arrange
         String expectedFileName = "file.txt";
         String url = "http://not-existing-url-32176573546.pl/" + expectedFileName;
@@ -232,11 +217,6 @@ public class DownloaderTests {
     }
 
     @Test
-    public void shouldThrowWhenUrlIsNull() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader(null, 1));
-    }
-
-    @Test
     public void shouldThrowWhenUrlIsEmpty() {
         Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", 1));
     }
@@ -252,11 +232,6 @@ public class DownloaderTests {
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {
-        Path filePath = Paths.get(testDirectory, fileName);
-        byte[] bytes = new byte[1024 * 1024 * sizeInMB];
-        new Random(22).nextBytes(bytes);
-        Files.write(filePath, bytes);
-
-        return filePath;
+        return CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
     }
 }

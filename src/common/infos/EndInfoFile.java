@@ -4,6 +4,7 @@ import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.utils.FilePartUtils;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -20,8 +21,11 @@ public class EndInfoFile extends InfoFile {
     }
 
     public EndInfoFile(String saveDirectory, List<Path> files) throws DownloadException {
-        if (files.isEmpty()) {
+        if (files == null || files.isEmpty()) {
             throw new DownloadException("No files to process are given.");
+        }
+        if (saveDirectory == null || saveDirectory.isEmpty() || !Files.exists(Paths.get(saveDirectory))) {
+            throw new DownloadException("Improper save directory.");
         }
 
         ArrayList<String> checksums = new ArrayList<>();
