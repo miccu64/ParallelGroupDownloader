@@ -1,6 +1,7 @@
 package common;
 
 import common.exceptions.DownloadException;
+import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
 import common.utils.FilePartUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -40,7 +41,7 @@ public class EndInfoFileTests {
         files.add(generateFile("shouldGenerateProperChecksums2", 2));
 
         ArrayList<String> expectedChecksums = new ArrayList<>();
-        for (Path path: files) {
+        for (Path path : files) {
             expectedChecksums.add(FilePartUtils.fileChecksum(path));
         }
 
@@ -58,11 +59,12 @@ public class EndInfoFileTests {
     @Test
     public void shouldSaveChecksumsToFile() throws IOException, DownloadException {
         // Arrange
+        String fileName = "shouldSaveChecksumsToFile";
         ArrayList<Path> files = new ArrayList<>();
-        files.add(generateFile("shouldSaveChecksumsToFile1", 1));
-        files.add(generateFile("shouldSaveChecksumsToFile2", 2));
+        files.add(generateFile(fileName + "1", 1));
+        files.add(generateFile(fileName + "2", 2));
 
-        Path currentTestDirectory = Paths.get(testDirectory, "shouldSaveChecksumsToFile");
+        Path currentTestDirectory = Paths.get(testDirectory, fileName);
         Files.createDirectories(currentTestDirectory);
 
         // Act
@@ -75,9 +77,31 @@ public class EndInfoFileTests {
         // Assert
         Assertions.assertEquals(1, fileContent.size());
         String content = fileContent.get(0);
-        for (String checksum: checksums) {
+        for (String checksum : checksums) {
             Assertions.assertTrue(content.contains(checksum));
         }
+    }
+
+    @Test
+    public void shouldInitValuesAndLoadedFromFileValuesBeTheSame() throws IOException, DownloadException, InfoFileException {
+        // Arrange
+        String fileName = "shouldInitValuesAndLoadedFromFileValuesBeTheSame";
+        ArrayList<Path> files = new ArrayList<>();
+        files.add(generateFile(fileName + "1", 1));
+        files.add(generateFile(fileName + "2", 2));
+
+        Path currentTestDirectory = Paths.get(testDirectory, fileName);
+        Files.createDirectories(currentTestDirectory);
+
+        // Act
+        EndInfoFile endInfoFile1 = new EndInfoFile(currentTestDirectory.toString(), files);
+        filesToDelete.add(endInfoFile1.filePath);
+        EndInfoFile endInfoFile2 = new EndInfoFile(endInfoFile1.filePath);
+
+        // Assert
+        Assertions.assertEquals(endInfoFile1.filePath, endInfoFile2.filePath);
+        Assertions.assertEquals(endInfoFile1.getChecksums(), endInfoFile2.getChecksums());
+        Assertions.assertEquals(endInfoFile1.toString(), endInfoFile2.toString());
     }
 
     @Test

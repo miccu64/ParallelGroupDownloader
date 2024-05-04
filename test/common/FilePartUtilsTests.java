@@ -26,7 +26,7 @@ public class FilePartUtilsTests {
 
     @BeforeAll
     public static void beforeAll() throws DownloadException, IOException {
-        CommonUtils.beforeAll(FilePartUtilsTests.testDirectory);
+        CommonUtils.beforeAll(testDirectory);
     }
 
     @AfterAll
