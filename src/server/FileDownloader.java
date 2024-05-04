@@ -23,8 +23,8 @@ import static common.utils.PrepareDownloadUtils.serverDownloadPath;
 
 public class FileDownloader implements Callable<StatusEnum> {
     private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
-    private final int blockSize;
-    private final long fileSizeInMB;
+    private final long blockSizeInBytes;
+    private final int fileSizeInMB;
     private final Path filePath;
     private final String fileName;
     private final URL url;
@@ -33,7 +33,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         return new ArrayList<>(processedFiles);
     }
 
-    public long getFileSizeInMB() {
+    public int getFileSizeInMB() {
         return fileSizeInMB;
     }
 
@@ -59,7 +59,7 @@ public class FileDownloader implements Callable<StatusEnum> {
             throw new DownloadException(e, "Malformed URL.");
         }
 
-        blockSize = blockSizeInMB * 1024 * 1024;
+        blockSizeInBytes = FilePartUtils.megabytesToBytes(blockSizeInMB);
         fileSizeInMB = findFileSizeInMB();
     }
 
@@ -79,13 +79,13 @@ public class FileDownloader implements Callable<StatusEnum> {
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
                      FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
-                    transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSize);
+                    transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
                     return handleDownloadError(e, "Cannot save to file: " + partFile);
                 }
 
                 processedFiles.add(filePartPath);
-            } while (transferredCount == blockSize);
+            } while (transferredCount == blockSizeInBytes);
         } catch (IOException e) {
             return handleDownloadError(e, "Cannot open given URL. Download aborted");
         }
@@ -112,25 +112,24 @@ public class FileDownloader implements Callable<StatusEnum> {
         return path.getFileName().toString();
     }
 
-    private long findFileSizeInMB() {
-        long fileSize = -1;
+    private int findFileSizeInMB() {
 
         URLConnection urlConnection = null;
         try {
             urlConnection = url.openConnection();
+            long fileSizeInBytes;
             if (urlConnection instanceof HttpURLConnection) {
                 HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
                 httpURLConnection.setRequestMethod("HEAD");
-                fileSize = httpURLConnection.getContentLengthLong();
+                fileSizeInBytes = httpURLConnection.getContentLengthLong();
             } else {
-                fileSize = urlConnection.getContentLengthLong();
+                fileSizeInBytes = urlConnection.getContentLengthLong();
             }
 
-            if (fileSize > 0) {
-                fileSize = (long) Math.ceil((double) fileSize / (double) (1024 * 1024));
-            }
+            return FilePartUtils.bytesToMegabytes(fileSizeInBytes);
         } catch (IOException ignored) {
             System.out.println("Could not determine file size.");
+            return 0;
         } finally {
             if (urlConnection != null) {
                 if (urlConnection instanceof HttpURLConnection) {
@@ -143,8 +142,6 @@ public class FileDownloader implements Callable<StatusEnum> {
                 }
             }
         }
-
-        return fileSize;
     }
 
     private Path createFilePartPath(int partNumber) {

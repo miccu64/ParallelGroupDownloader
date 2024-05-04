@@ -59,14 +59,31 @@ public class FilePartUtils {
         }
 
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            try (InputStream is = Files.newInputStream(filePath);
-                 DigestInputStream ignored = new DigestInputStream(is, md)) {
-                byte[] checksum = md.digest();
-                return Base64.getEncoder().encodeToString(checksum);
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            try (InputStream inputStream = Files.newInputStream(filePath);
+                 DigestInputStream digestInputStream = new DigestInputStream(inputStream, messageDigest)) {
+                byte[] buffer = new byte[50000000];
+                while (digestInputStream.read(buffer) != -1) {
+                }
             }
+            byte[] checksum = messageDigest.digest();
+            return Base64.getEncoder().encodeToString(checksum);
         } catch (IOException | NoSuchAlgorithmException e) {
             throw new DownloadException(e, "Could not create file checksum.");
         }
+    }
+
+    public static long megabytesToBytes(int megabytes) {
+        if (megabytes < 0) {
+            return 0;
+        }
+        return ((long) megabytes) * 1024 * 1024;
+    }
+
+    public static int bytesToMegabytes(long bytes) {
+        if (bytes <= 0) {
+            return 0;
+        }
+        return (int) Math.ceil((double) bytes / (1024 * 1024));
     }
 }

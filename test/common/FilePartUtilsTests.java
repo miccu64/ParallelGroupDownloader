@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -178,6 +179,7 @@ public class FilePartUtilsTests {
         // Arrange
         Path original = generateFile("fileChecksum_ShouldReturnTheSameChecksumForIdenticalFileContent");
         Path copy = Files.copy(original, Paths.get(original.toAbsolutePath() + "Copy"));
+        filesToDelete.add(copy);
 
         // Act
         String originalChecksum = FilePartUtils.fileChecksum(original);
@@ -185,6 +187,20 @@ public class FilePartUtilsTests {
 
         // Assert
         Assertions.assertEquals(originalChecksum, copyChecksum);
+    }
+
+    @Test
+    public void fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles() throws IOException, DownloadException {
+        // Arrange
+        Path file1 = generateFile("fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles1");
+        Path file2 = generateFile("fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles2");
+
+        // Act
+        String checksum1 = FilePartUtils.fileChecksum(file1);
+        String checksum2 = FilePartUtils.fileChecksum(file2);
+
+        // Assert
+        Assertions.assertNotEquals(checksum1, checksum2);
     }
 
     @Test
@@ -206,6 +222,70 @@ public class FilePartUtilsTests {
 
         // Act / Assert
         Assertions.assertThrowsExactly(DownloadException.class, () -> FilePartUtils.fileChecksum(path));
+    }
+
+    @Test
+    public void megabytesToBytes_ShouldReturnProperValue() {
+        // Arrange
+        int megabytes = 10;
+
+        // Act
+        long bytes = FilePartUtils.megabytesToBytes(megabytes);
+
+        // Assert
+        Assertions.assertEquals(megabytes * 1024 * 1024, bytes);
+    }
+
+    @Test
+    public void megabytesToBytes_ShouldReturnZeros() {
+        // Arrange
+        ArrayList<Integer> megabytes = new ArrayList<>();
+        megabytes.add(0);
+        megabytes.add(-1);
+
+        // Act
+        List<Long> bytes = megabytes.stream().map(FilePartUtils::megabytesToBytes).collect(Collectors.toList());
+
+        // Assert
+        for (Long l : bytes) {
+            Assertions.assertEquals(0L, l);
+        }
+    }
+
+    @Test
+    public void bytesToMegabytes_ShouldReturnCeilValues() {
+        // Arrange
+        int fiveMB = 5;
+        long fiveMBInBytes = fiveMB * 1024 * 1024;
+        HashMap<Long, Integer> bytesAndMB = new HashMap<>();
+        bytesAndMB.put(fiveMBInBytes, fiveMB);
+        bytesAndMB.put(fiveMBInBytes - 1, fiveMB);
+        bytesAndMB.put(fiveMBInBytes + 1, fiveMB + 1);
+        bytesAndMB.put(1L, 1);
+
+        // Act
+        List<Integer> results = bytesAndMB.keySet().stream().map(FilePartUtils::bytesToMegabytes).collect(Collectors.toList());
+
+        // Assert
+        for (int i = 0; i < bytesAndMB.size(); i++) {
+            Assertions.assertEquals(bytesAndMB.values().toArray()[i], results.get(i));
+        }
+    }
+
+    @Test
+    public void bytesToMegabytes_ShouldReturnZeros() {
+        // Arrange
+        ArrayList<Integer> bytes = new ArrayList<>();
+        bytes.add(0);
+        bytes.add(-1);
+
+        // Act
+        List<Integer> megabytes = bytes.stream().map(FilePartUtils::bytesToMegabytes).collect(Collectors.toList());
+
+        // Assert
+        for (int mb : megabytes) {
+            Assertions.assertEquals(0, mb);
+        }
     }
 
     private Path generateFile(String fileName) throws IOException {

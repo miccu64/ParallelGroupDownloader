@@ -2,11 +2,11 @@ package client;
 
 import common.ILogic;
 import common.StatusEnum;
+import common.UdpcastService;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
-import common.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 
@@ -73,13 +73,11 @@ public class ClientLogic implements ILogic {
         StartInfoFile startInfoFile = new StartInfoFile(startFilePath);
 
         System.out.println("Download started. Url: " + startInfoFile.url + ", file name: " + startInfoFile.fileName);
-        if (startInfoFile.fileSizeInMB == 0) {
+        if (startInfoFile.summarySizeInMB < 1) {
             System.out.println("Not known file size - program will try download it anyway.");
         } else {
-            System.out.println("Expected file size: " + startInfoFile.fileSizeInMB);
-            if (!PrepareDownloadUtils.checkFreeSpace(startInfoFile.fileSizeInMB)) {
-                throw new DownloadException("Not enough free space. Exiting...");
-            }
+            System.out.println("Expected file size: " + startInfoFile.summarySizeInMB);
+            PrepareDownloadUtils.checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
         }
 
         return startInfoFile.fileName;
@@ -107,14 +105,14 @@ public class ClientLogic implements ILogic {
     }
 
     private void compareChecksums(List<String> expectedChecksums) throws DownloadException {
-        if (expectedChecksums.size() != processedFiles.size()){
+        if (expectedChecksums.size() != processedFiles.size()) {
             throw new DownloadException("Checksums count does not equals downloaded files count.");
         }
 
-        for (int i = 0; i<expectedChecksums.size(); i++) {
+        for (int i = 0; i < expectedChecksums.size(); i++) {
             Path filePath = processedFiles.get(i);
             String actualChecksum = FilePartUtils.fileChecksum(filePath);
-            if (!actualChecksum.equals(expectedChecksums.get(i))){
+            if (!actualChecksum.equals(expectedChecksums.get(i))) {
                 throw new DownloadException("Wrong checksum of file: " + filePath);
             }
         }

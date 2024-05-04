@@ -37,10 +37,12 @@ public class ServerLogic implements ILogic {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<StatusEnum> fileDownloaderFuture = null;
         try {
-            FileDownloader fileDownloader = new FileDownloader(url, 6);
-            fileDownloaderFuture = executorService.submit(fileDownloader);
+            int partSizeInMB = 6;
+            FileDownloader fileDownloader = new FileDownloader(url, partSizeInMB);
+            PrepareDownloadUtils.checkFreeSpace(fileDownloader.getFileSizeInMB(), partSizeInMB);
 
-            processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB());
+            fileDownloaderFuture = executorService.submit(fileDownloader);
+            processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB(), partSizeInMB);
 
             do {
                 Path fileToProcess = tryGetUnprocessedFile(fileDownloader.getProcessedFiles());
@@ -76,8 +78,8 @@ public class ServerLogic implements ILogic {
         return result;
     }
 
-    private void processStartFile(String fileName, long fileSizeInMB) throws DownloadException {
-        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB);
+    private void processStartFile(String fileName, int fileSizeInMB, int partSizeInMB) throws DownloadException {
+        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB, partSizeInMB);
         startFilePath = startInfoFile.filePath;
         udpcastService.processFile(startFilePath);
     }

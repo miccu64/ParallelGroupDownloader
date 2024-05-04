@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 public class MainFileDownloader {
     public static void main(String[] args) throws DownloadException, MalformedURLException {
         PrepareDownloadUtils.initProgram();
-        PrepareDownloadUtils.beforeDownloadCheck(1111);
+        //PrepareDownloadUtils.beforeDownloadCheck(1111);
 
         Path testFilePath = Paths.get("_master_thesis", "Praca_magisterska.docx");
         URL url = testFilePath.toUri().toURL();

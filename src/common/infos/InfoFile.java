@@ -26,8 +26,7 @@ public abstract class InfoFile {
     protected List<String> tryGetInfo(Path filePath, String separator) throws DownloadException, InfoFileException {
         try {
             long fileSizeInBytes = Files.size(filePath);
-            int oneMBAsBytes = 1000000;
-            if (fileSizeInBytes > oneMBAsBytes) {
+            if (fileSizeInBytes > 1000000) {
                 throw new InfoFileException("Improper file size.");
             }
 

@@ -43,7 +43,7 @@ public class CommonUtils {
     public static Path generateFile(String fileName, String testDirectory, int sizeInMB) throws IOException {
         Path filePath = Paths.get(testDirectory, fileName);
         byte[] bytes = new byte[1024 * 1024 * sizeInMB];
-        new Random(22).nextBytes(bytes);
+        new Random().nextBytes(bytes);
         Files.write(filePath, bytes);
 
         return filePath;

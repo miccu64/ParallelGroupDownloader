@@ -80,7 +80,7 @@ public class DownloaderTests {
 
         Path firstPart = fileDownloader.getProcessedFiles().get(0);
         long sizeInBytes = Files.size(firstPart);
-        float fileSizeInMB = (float) sizeInBytes / (1024 * 1024);
+        int fileSizeInMB = FilePartUtils.bytesToMegabytes(sizeInBytes);
 
         // Assert
         Assertions.assertEquals(blockSizeInMB, fileSizeInMB);
@@ -120,7 +120,7 @@ public class DownloaderTests {
         String fileName = "shouldFileDownloaderGetProperLocalFileSize";
         Path filePathToDownload = generateFile(fileName, 1);
 
-        int expectedSize = (int) Math.ceil((double) Files.size(filePathToDownload) / (double) (1024 * 1024));
+        int expectedSize = FilePartUtils.bytesToMegabytes(Files.size(filePathToDownload));
         URL url = filePathToDownload.toUri().toURL();
 
         // Act
@@ -171,7 +171,7 @@ public class DownloaderTests {
         long size = fileDownloader.getFileSizeInMB();
 
         // Assert
-        Assertions.assertEquals(-1, size);
+        Assertions.assertEquals(0, size);
     }
 
     @Test
