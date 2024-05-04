@@ -1,27 +1,26 @@
 package server;
 
+import common.services.ChecksumService;
 import common.ILogic;
 import common.StatusEnum;
+import common.services.UdpcastService;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
-import common.UdpcastService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class ServerLogic implements ILogic {
     private final String downloadPath = PrepareDownloadUtils.serverDownloadPath.toString();
     private final String url;
     private final UdpcastService udpcastService;
     private final ArrayList<Path> processedFiles = new ArrayList<>();
+    private final ChecksumService checksumService = new ChecksumService();
 
     private int processedPartsCount = 0;
     private Path startFilePath;
@@ -35,13 +34,15 @@ public class ServerLogic implements ILogic {
     public StatusEnum doWork() {
         StatusEnum result;
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<StatusEnum> fileDownloaderFuture = null;
+        Future<StatusEnum> fileDownloaderFuture;
         try {
-            int partSizeInMB = 6;
+            int partSizeInMB = 1;
             FileDownloader fileDownloader = new FileDownloader(url, partSizeInMB);
             PrepareDownloadUtils.checkFreeSpace(fileDownloader.getFileSizeInMB(), partSizeInMB);
 
             fileDownloaderFuture = executorService.submit(fileDownloader);
+            checkDownloadIsProperlyStarted(fileDownloaderFuture);
+
             processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB(), partSizeInMB);
 
             do {
@@ -53,16 +54,23 @@ public class ServerLogic implements ILogic {
 
             checkFileDownloaderSuccess(fileDownloaderFuture);
             processRemainingParts(fileDownloader.getProcessedFiles());
+
             processEndFile();
 
             FilePartUtils.joinAndRemoveFileParts(processedFiles);
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
-            if (fileDownloaderFuture != null && !fileDownloaderFuture.isDone()) {
-                fileDownloaderFuture.cancel(true);
-            }
+            checksumService.shutdown();
+
             executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException ignored) {
+                executorService.shutdownNow();
+            }
 
             result = StatusEnum.Error;
         } finally {
@@ -76,6 +84,13 @@ public class ServerLogic implements ILogic {
         }
 
         return result;
+    }
+
+    private void checkDownloadIsProperlyStarted(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
+        sleepOneSecond();
+        if (fileDownloaderFuture.isDone()) {
+            checkFileDownloaderSuccess(fileDownloaderFuture);
+        }
     }
 
     private void processStartFile(String fileName, int fileSizeInMB, int partSizeInMB) throws DownloadException {
@@ -94,7 +109,10 @@ public class ServerLogic implements ILogic {
 
     private void processFilePart(Path filePath) throws DownloadException {
         processedFiles.add(filePath);
+
         udpcastService.processFile(filePath);
+        checksumService.addFileToProcess(filePath);
+
         processedPartsCount++;
     }
 
@@ -117,8 +135,17 @@ public class ServerLogic implements ILogic {
     }
 
     private void processEndFile() throws DownloadException {
-        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, processedFiles);
+        List<String> checksums = checksumService.getChecksums();
+        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, checksums);
         endFilePath = endInfoFile.filePath;
         udpcastService.processFile(endFilePath);
+    }
+
+    private void sleepOneSecond() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

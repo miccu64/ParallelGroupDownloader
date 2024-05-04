@@ -2,6 +2,7 @@ package server;
 
 import common.StatusEnum;
 import common.exceptions.DownloadException;
+import common.services.ChecksumService;
 import common.utils.FilePartUtils;
 import common.utils.PrepareDownloadUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -55,8 +56,11 @@ public class DownloaderTests {
         Path downloadedFile = Paths.get(String.valueOf(PrepareDownloadUtils.serverDownloadPath), fileName);
         filesToDelete.add(downloadedFile);
 
-        String downloadedChecksum = FilePartUtils.fileChecksum(downloadedFile);
-        String originalChecksum = FilePartUtils.fileChecksum(filePathToDownload);
+        ChecksumService checksumService = new ChecksumService();
+        checksumService.addFileToProcess(downloadedFile);
+        checksumService.addFileToProcess(filePathToDownload);
+        String downloadedChecksum = checksumService.getChecksums().get(0);
+        String originalChecksum = checksumService.getChecksums().get(1);
 
         // Assert
         Assertions.assertEquals(originalChecksum, downloadedChecksum);

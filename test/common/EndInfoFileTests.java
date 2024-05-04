@@ -3,7 +3,7 @@ package common;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
-import common.utils.FilePartUtils;
+import common.services.ChecksumService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -25,35 +24,12 @@ public class EndInfoFileTests {
 
     @BeforeAll
     public static void beforeAll() throws DownloadException, IOException {
-        CommonUtils.beforeAll(EndInfoFileTests.testDirectory);
+        CommonUtils.beforeAll(testDirectory);
     }
 
     @AfterAll
     public static void afterAll() {
         CommonUtils.afterAll(testDirectory, new ArrayList<>(filesToDelete));
-    }
-
-    @Test
-    public void shouldGenerateProperChecksums() throws IOException, DownloadException {
-        // Arrange
-        ArrayList<Path> files = new ArrayList<>();
-        files.add(generateFile("shouldGenerateProperChecksums1", 1));
-        files.add(generateFile("shouldGenerateProperChecksums2", 2));
-
-        ArrayList<String> expectedChecksums = new ArrayList<>();
-        for (Path path : files) {
-            expectedChecksums.add(FilePartUtils.fileChecksum(path));
-        }
-
-        Path currentTestDirectory = Paths.get(testDirectory, "shouldGenerateProperChecksums");
-        Files.createDirectories(currentTestDirectory);
-
-        // Act
-        EndInfoFile endInfoFile = new EndInfoFile(currentTestDirectory.toString(), files);
-        filesToDelete.add(endInfoFile.filePath);
-
-        // Assert
-        Assertions.assertEquals(expectedChecksums, endInfoFile.getChecksums());
     }
 
     @Test
@@ -67,8 +43,14 @@ public class EndInfoFileTests {
         Path currentTestDirectory = Paths.get(testDirectory, fileName);
         Files.createDirectories(currentTestDirectory);
 
+        ChecksumService checksumService = new ChecksumService();
+        for (Path path : files) {
+            checksumService.addFileToProcess(path);
+        }
+        List<String> expectedChecksums = checksumService.getChecksums();
+
         // Act
-        EndInfoFile endInfoFile = new EndInfoFile(currentTestDirectory.toString(), files);
+        EndInfoFile endInfoFile = new EndInfoFile(currentTestDirectory.toString(), expectedChecksums);
         filesToDelete.add(endInfoFile.filePath);
 
         List<String> checksums = endInfoFile.getChecksums();
@@ -93,8 +75,14 @@ public class EndInfoFileTests {
         Path currentTestDirectory = Paths.get(testDirectory, fileName);
         Files.createDirectories(currentTestDirectory);
 
+        ChecksumService checksumService = new ChecksumService();
+        for (Path path : files) {
+            checksumService.addFileToProcess(path);
+        }
+        List<String> checksums = checksumService.getChecksums();
+
         // Act
-        EndInfoFile endInfoFile1 = new EndInfoFile(currentTestDirectory.toString(), files);
+        EndInfoFile endInfoFile1 = new EndInfoFile(currentTestDirectory.toString(), checksums);
         filesToDelete.add(endInfoFile1.filePath);
         EndInfoFile endInfoFile2 = new EndInfoFile(endInfoFile1.filePath);
 
@@ -125,13 +113,12 @@ public class EndInfoFileTests {
     }
 
     @Test
-    public void shouldThrowWhenFileDoesNotExist() {
+    public void shouldThrowWhenNoChecksumsAreGiven() {
         // Arrange
-        ArrayList<Path> list = new ArrayList<>(Collections.singleton(Paths.get("notExistingFile54389732.txt")));
-        Assertions.assertFalse(Files.exists(list.get(0)));
+        List<String> checksums = new ArrayList<>();
 
         // Act / Assert
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new EndInfoFile(testDirectory, list));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new EndInfoFile(testDirectory, checksums));
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {

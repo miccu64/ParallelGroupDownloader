@@ -175,56 +175,6 @@ public class FilePartUtilsTests {
     }
 
     @Test
-    public void fileChecksum_ShouldReturnTheSameChecksumForIdenticalFileContent() throws IOException, DownloadException {
-        // Arrange
-        Path original = generateFile("fileChecksum_ShouldReturnTheSameChecksumForIdenticalFileContent");
-        Path copy = Files.copy(original, Paths.get(original.toAbsolutePath() + "Copy"));
-        filesToDelete.add(copy);
-
-        // Act
-        String originalChecksum = FilePartUtils.fileChecksum(original);
-        String copyChecksum = FilePartUtils.fileChecksum(copy);
-
-        // Assert
-        Assertions.assertEquals(originalChecksum, copyChecksum);
-    }
-
-    @Test
-    public void fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles() throws IOException, DownloadException {
-        // Arrange
-        Path file1 = generateFile("fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles1");
-        Path file2 = generateFile("fileChecksum_ShouldReturnDifferentChecksumsForDifferentFiles2");
-
-        // Act
-        String checksum1 = FilePartUtils.fileChecksum(file1);
-        String checksum2 = FilePartUtils.fileChecksum(file2);
-
-        // Assert
-        Assertions.assertNotEquals(checksum1, checksum2);
-    }
-
-    @Test
-    public void fileChecksum_ShouldThrowWhenFileDoesNotExist() {
-        // Arrange
-        Path path = Paths.get("fileChecksum_ShouldThrowWhenFileDoesNotExist");
-        Assertions.assertFalse(Files.exists(path));
-
-        // Act / Assert
-        Assertions.assertThrowsExactly(DownloadException.class, () -> FilePartUtils.fileChecksum(path));
-    }
-
-    @Test
-    public void fileChecksum_ShouldThrowWhenFileIsEmpty() throws IOException {
-        // Arrange
-        Path path = Paths.get(testDirectory, "fileChecksum_ShouldThrowWhenFileIsEmpty");
-        Files.createFile(path);
-        filesToDelete.add(path);
-
-        // Act / Assert
-        Assertions.assertThrowsExactly(DownloadException.class, () -> FilePartUtils.fileChecksum(path));
-    }
-
-    @Test
     public void megabytesToBytes_ShouldReturnProperValue() {
         // Arrange
         int megabytes = 10;

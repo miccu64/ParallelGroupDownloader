@@ -1,7 +1,7 @@
 package client;
 
 import common.exceptions.DownloadException;
-import common.UdpcastService;
+import common.services.UdpcastService;
 
 import java.util.HashMap;
 

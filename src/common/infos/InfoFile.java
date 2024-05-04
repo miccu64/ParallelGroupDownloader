@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class InfoFile {
-    protected final String errorText = "Given file is not proper end file. Path: ";
+    protected final String errorText = "Given file is not proper start/end file. Path: ";
 
     protected void saveToFile(Path filePath) throws DownloadException {
         try {

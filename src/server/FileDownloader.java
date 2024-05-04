@@ -66,7 +66,7 @@ public class FileDownloader implements Callable<StatusEnum> {
     @Override
     public StatusEnum call() {
         int blockNumber = 0;
-        long transferredCount;
+        long transferredCount = 0;
 
         try (InputStream inputStream = this.url.openStream();
              ReadableByteChannel channel = Channels.newChannel(inputStream)) {
@@ -81,10 +81,15 @@ public class FileDownloader implements Callable<StatusEnum> {
                      FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
+                    FilePartUtils.removeFile(filePartPath);
                     return handleDownloadError(e, "Cannot save to file: " + partFile);
                 }
 
-                processedFiles.add(filePartPath);
+                if (transferredCount > 0) {
+                    processedFiles.add(filePartPath);
+                } else {
+                    FilePartUtils.removeFile(filePartPath);
+                }
             } while (transferredCount == blockSizeInBytes);
         } catch (IOException e) {
             return handleDownloadError(e, "Cannot open given URL. Download aborted");

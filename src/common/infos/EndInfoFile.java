@@ -20,19 +20,14 @@ public class EndInfoFile extends InfoFile {
         return checksums;
     }
 
-    public EndInfoFile(String saveDirectory, List<Path> files) throws DownloadException {
-        if (files == null || files.isEmpty()) {
-            throw new DownloadException("No files to process are given.");
+    public EndInfoFile(String saveDirectory, List<String> checksums) throws DownloadException {
+        if (checksums == null || checksums.isEmpty()) {
+            throw new DownloadException("No checksums are given.");
         }
         if (saveDirectory == null || saveDirectory.isEmpty() || !Files.exists(Paths.get(saveDirectory))) {
             throw new DownloadException("Improper save directory.");
         }
 
-        ArrayList<String> checksums = new ArrayList<>();
-        for (Path file : files) {
-            String s = FilePartUtils.fileChecksum(file);
-            checksums.add(s);
-        }
         this.checksums = checksums;
 
         filePath = Paths.get(saveDirectory, "endInfo.txt");

@@ -50,6 +50,7 @@ public class StartInfoFile extends InfoFile {
         return separator +
                 url + separator +
                 fileName + separator +
-                summarySizeInMB + separator;
+                summarySizeInMB + separator +
+                partSizeInMB + separator;
     }
 }
