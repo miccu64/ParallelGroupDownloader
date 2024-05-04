@@ -4,7 +4,6 @@ import common.StatusEnum;
 import common.exceptions.DownloadException;
 import common.services.ChecksumService;
 import common.utils.FilePartUtils;
-import common.utils.PrepareDownloadUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,7 +12,6 @@ import utils.CommonUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,11 +22,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class DownloaderTests {
     private final static ConcurrentLinkedQueue<Path> filesToDelete = new ConcurrentLinkedQueue<>();
-    private final static String testDirectory = String.valueOf(Paths.get(CommonUtils.testDirectory,"DownloaderTests"));
+    private final static String testDirectory = String.valueOf(Paths.get(CommonUtils.testDirectory, "DownloaderTests"));
+    private final static String fileDownloaderDirectory = String.valueOf(Paths.get(testDirectory, "FileDownloader"));
 
     @BeforeAll
-    public static void beforeAll() throws DownloadException, IOException {
+    public static void beforeAll() throws IOException {
         CommonUtils.beforeAll(testDirectory);
+        CommonUtils.beforeAll(fileDownloaderDirectory);
     }
 
     @AfterAll
@@ -46,14 +46,14 @@ public class DownloaderTests {
         URL url = filePathToDownload.toUri().toURL();
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 2);
+        FileDownloader fileDownloader = createFileDownloader(url.toString(), 2);
         StatusEnum result = fileDownloader.call();
         filesToDelete.addAll(fileDownloader.getProcessedFiles());
 
         Assertions.assertEquals(StatusEnum.Success, result);
         Assertions.assertDoesNotThrow(() -> FilePartUtils.joinAndRemoveFileParts(fileDownloader.getProcessedFiles()));
 
-        Path downloadedFile = Paths.get(String.valueOf(PrepareDownloadUtils.serverDownloadPath), fileName);
+        Path downloadedFile = Paths.get(fileDownloaderDirectory, fileName);
         filesToDelete.add(downloadedFile);
 
         ChecksumService checksumService = new ChecksumService();
@@ -76,7 +76,7 @@ public class DownloaderTests {
         int blockSizeInMB = 1;
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), blockSizeInMB);
+        FileDownloader fileDownloader = createFileDownloader(url.toString(), blockSizeInMB);
         StatusEnum result = fileDownloader.call();
         filesToDelete.addAll(fileDownloader.getProcessedFiles());
 
@@ -99,7 +99,7 @@ public class DownloaderTests {
         URL url = filePathToDownload.toUri().toURL();
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 2);
+        FileDownloader fileDownloader = createFileDownloader(url.toString(), 2);
         StatusEnum result = fileDownloader.call();
         List<Path> processedFiles = fileDownloader.getProcessedFiles();
         filesToDelete.addAll(processedFiles);
@@ -112,6 +112,7 @@ public class DownloaderTests {
         }
 
         Path finalFilePath = FilePartUtils.joinAndRemoveFileParts(processedFiles);
+        filesToDelete.add(finalFilePath);
         long sizeInBytesAfterJoin = Files.size(finalFilePath);
 
         // Assert
@@ -128,7 +129,7 @@ public class DownloaderTests {
         URL url = filePathToDownload.toUri().toURL();
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
+        FileDownloader fileDownloader = createFileDownloader(url.toString(), 1);
         long fileDownloaderSize = fileDownloader.getFileSizeInMB();
 
         // Assert
@@ -144,7 +145,7 @@ public class DownloaderTests {
         URL url = filePathToDownload.toUri().toURL();
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url.toString(), 1);
+        FileDownloader fileDownloader = createFileDownloader(url.toString(), 1);
         String fileName = fileDownloader.getFileName();
 
         // Assert
@@ -158,7 +159,7 @@ public class DownloaderTests {
         String url = "http://not-existing-url-32176573546.pl/" + expectedFileName;
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url, 1);
+        FileDownloader fileDownloader = createFileDownloader(url, 1);
         String fileName = fileDownloader.getFileName();
 
         // Assert
@@ -171,7 +172,7 @@ public class DownloaderTests {
         String url = "http://not-existing-url-32176573546.pl/file.txt";
 
         // Act
-        FileDownloader fileDownloader = new FileDownloader(url, 1);
+        FileDownloader fileDownloader = createFileDownloader(url, 1);
         long size = fileDownloader.getFileSizeInMB();
 
         // Assert
@@ -179,14 +180,14 @@ public class DownloaderTests {
     }
 
     @Test
-    public void shouldThrowWhenFileNotExists() throws MalformedURLException, DownloadException {
+    public void shouldThrowWhenFileNotExists() throws IOException, DownloadException {
         // Arrange
         Path notExistingFile = Paths.get("shouldThrowWhenFileNotExists.file").toAbsolutePath();
         File f = notExistingFile.toFile();
         Assertions.assertFalse(f.exists());
 
         String notExistingFileUrl = notExistingFile.toUri().toURL().toString();
-        FileDownloader fileDownloader = new FileDownloader(notExistingFileUrl, 1);
+        FileDownloader fileDownloader = createFileDownloader(notExistingFileUrl, 1);
 
         // Act
         StatusEnum result = fileDownloader.call();
@@ -198,10 +199,11 @@ public class DownloaderTests {
     @Test
     public void shouldThrowWhenIsMalformedLocalFileUrl() {
         // Arrange
-        String malformedUrl = Paths.get("shouldThrowWhenIsMalformedLocalFileUrl.file").toString();
+        String fileName = "shouldThrowWhenIsMalformedLocalFileUrl";
+        String malformedUrl = Paths.get(fileName + ".file").toString();
 
         // Act
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader(malformedUrl, 1));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> createFileDownloader(malformedUrl, 1));
     }
 
     @Test
@@ -210,7 +212,7 @@ public class DownloaderTests {
         String malformedUrl = "http://not-existing-url-32176573546.pl/file.txt";
 
         // Act
-        StatusEnum status = new FileDownloader(malformedUrl, 1).call();
+        StatusEnum status = new FileDownloader(malformedUrl, 1, null).call();
 
         // Assert
         Assertions.assertEquals(StatusEnum.Error, status);
@@ -218,22 +220,26 @@ public class DownloaderTests {
 
     @Test
     public void shouldThrowWhenUrlIsEmpty() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", 1));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", 1, null));
     }
 
     @Test
     public void shouldThrowWhenBlockSizeEqualsZero() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", 0));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", 0, null));
     }
 
     @Test
     public void shouldThrowWhenBlockSizeIsLowerThanZero() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", -1));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", -1, null));
     }
 
     private Path generateFile(String fileName, int sizeInMB) throws IOException {
         Path path = CommonUtils.generateFile(fileName, testDirectory, sizeInMB);
         filesToDelete.add(path);
         return path;
+    }
+
+    private FileDownloader createFileDownloader(String url, int blockSizeInMB) throws DownloadException {
+        return new FileDownloader(url, blockSizeInMB, fileDownloaderDirectory);
     }
 }

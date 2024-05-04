@@ -1,8 +1,5 @@
 package utils;
 
-import common.exceptions.DownloadException;
-import common.utils.PrepareDownloadUtils;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,9 +12,7 @@ import java.util.stream.Stream;
 public class CommonUtils {
     public final static String testDirectory = "filesTest";
 
-    public static void beforeAll(String testDirectory) throws DownloadException, IOException {
-        PrepareDownloadUtils.initProgram();
-
+    public static void beforeAll(String testDirectory) throws IOException {
         Files.createDirectories(Paths.get(CommonUtils.testDirectory));
         Files.createDirectories(Paths.get(testDirectory));
     }

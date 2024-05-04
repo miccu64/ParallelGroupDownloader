@@ -1,7 +1,7 @@
 package client;
 
 import common.services.ChecksumService;
-import common.ILogic;
+import common.CommonLogic;
 import common.StatusEnum;
 import common.services.UdpcastService;
 import common.exceptions.DownloadException;
@@ -9,7 +9,6 @@ import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
 import common.utils.FilePartUtils;
-import common.utils.PrepareDownloadUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,8 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClientLogic implements ILogic {
-    private final String downloadPath = PrepareDownloadUtils.clientDownloadPath.toString();
+public class ClientLogic extends CommonLogic {
     private final List<Path> processedFiles = new ArrayList<>();
     private final ChecksumService checksumService = new ChecksumService();
     private final UdpcastService udpcastService;
@@ -29,6 +27,7 @@ public class ClientLogic implements ILogic {
     private Path endFilePath;
 
     public ClientLogic(int port, String udpcastPath) throws DownloadException {
+        super(Paths.get("downloadsClient"));
         this.udpcastService = new ClientUdpcastService(port, udpcastPath);
     }
 
@@ -85,7 +84,7 @@ public class ClientLogic implements ILogic {
             System.out.println("Not known file size - program will try download it anyway.");
         } else {
             System.out.println("Expected file size (in MB): " + startInfoFile.summarySizeInMB);
-            PrepareDownloadUtils.checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
+            checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
         }
 
         return startInfoFile.fileName;

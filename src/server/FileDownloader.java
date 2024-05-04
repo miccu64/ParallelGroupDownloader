@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static common.utils.PrepareDownloadUtils.serverDownloadPath;
-
 public class FileDownloader implements Callable<StatusEnum> {
     private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
     private final long blockSizeInBytes;
@@ -41,7 +39,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         return fileName;
     }
 
-    public FileDownloader(String url, int blockSizeInMB) throws DownloadException {
+    public FileDownloader(String url, int blockSizeInMB, String downloadPath) throws DownloadException {
         if (url == null || url.isEmpty()) {
             throw new DownloadException("Empty url.");
         }
@@ -54,7 +52,7 @@ public class FileDownloader implements Callable<StatusEnum> {
             URI uri = new URI(url);
             this.url = uri.toURL();
             fileName = getFileNameFromUrl(uri);
-            filePath = Paths.get(String.valueOf(serverDownloadPath), fileName);
+            filePath = Paths.get(downloadPath, fileName);
         } catch (IllegalArgumentException | MalformedURLException | URISyntaxException e) {
             throw new DownloadException(e, "Malformed URL.");
         }
@@ -66,7 +64,7 @@ public class FileDownloader implements Callable<StatusEnum> {
     @Override
     public StatusEnum call() {
         int blockNumber = 0;
-        long transferredCount = 0;
+        long transferredCount;
 
         try (InputStream inputStream = this.url.openStream();
              ReadableByteChannel channel = Channels.newChannel(inputStream)) {

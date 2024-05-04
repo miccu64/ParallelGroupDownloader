@@ -1,22 +1,21 @@
 package server;
 
 import common.services.ChecksumService;
-import common.ILogic;
+import common.CommonLogic;
 import common.StatusEnum;
 import common.services.UdpcastService;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
 import common.utils.FilePartUtils;
-import common.utils.PrepareDownloadUtils;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class ServerLogic implements ILogic {
-    private final String downloadPath = PrepareDownloadUtils.serverDownloadPath.toString();
+public class ServerLogic extends CommonLogic {
     private final String url;
     private final UdpcastService udpcastService;
     private final ArrayList<Path> processedFiles = new ArrayList<>();
@@ -27,6 +26,7 @@ public class ServerLogic implements ILogic {
     private Path endFilePath;
 
     public ServerLogic(String url, int port, String udpcastPath) throws DownloadException {
+        super(Paths.get("downloadsServer"));
         this.url = url;
         udpcastService = new ServerUdpcastService(port, udpcastPath);
     }
@@ -37,8 +37,8 @@ public class ServerLogic implements ILogic {
         Future<StatusEnum> fileDownloaderFuture;
         try {
             int partSizeInMB = 1;
-            FileDownloader fileDownloader = new FileDownloader(url, partSizeInMB);
-            PrepareDownloadUtils.checkFreeSpace(fileDownloader.getFileSizeInMB(), partSizeInMB);
+            FileDownloader fileDownloader = new FileDownloader(url, partSizeInMB, downloadPath);
+            checkFreeSpace(fileDownloader.getFileSizeInMB(), partSizeInMB);
 
             fileDownloaderFuture = executorService.submit(fileDownloader);
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
