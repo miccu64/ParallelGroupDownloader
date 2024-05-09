@@ -1,9 +1,7 @@
 package client;
 
-import common.services.ChecksumService;
 import common.CommonLogic;
 import common.StatusEnum;
-import common.services.UdpcastService;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
@@ -15,20 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ClientLogic extends CommonLogic {
-    private final List<Path> processedFiles = new ArrayList<>();
-    private final ChecksumService checksumService = new ChecksumService();
-    private final UdpcastService udpcastService;
-
-    private Path startFilePath;
-    private Path endFilePath;
-
     public ClientLogic(int port, String udpcastPath) throws DownloadException {
-        super(Paths.get("downloadsClient"));
-        this.udpcastService = new ClientUdpcastService(port, udpcastPath);
+        super(new ClientUdpcastService(port, udpcastPath), Paths.get("downloadsClient"));
     }
 
     public StatusEnum doWork() {
@@ -57,47 +46,44 @@ public class ClientLogic extends CommonLogic {
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
-            System.out.println("Exiting...");
             result = StatusEnum.Error;
         } finally {
-            if (startFilePath != null) {
-                processedFiles.add(startFilePath);
-            }
-            if (endFilePath != null) {
-                processedFiles.add(endFilePath);
-            }
-            checksumService.shutdown();
-
-            FilePartUtils.removeFiles(processedFiles);
+            cleanup();
         }
 
         return result;
     }
 
     private String processStartFile() throws DownloadException {
-        startFilePath = Paths.get(downloadPath, "startInfo.txt");
-        udpcastService.processFile(startFilePath);
-        StartInfoFile startInfoFile = new StartInfoFile(startFilePath);
+        Path startFilePath = Paths.get(downloadPath, "startInfo.txt");
+        try {
+            udpcastService.processFile(startFilePath);
+            StartInfoFile startInfoFile = new StartInfoFile(startFilePath);
 
-        System.out.println("Download started. Url: " + startInfoFile.url + ", file name: " + startInfoFile.fileName);
-        if (startInfoFile.summarySizeInMB < 1) {
-            System.out.println("Not known file size - program will try download it anyway.");
-        } else {
-            System.out.println("Expected file size (in MB): " + startInfoFile.summarySizeInMB);
-            checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
+            System.out.println("Download started. Url: " + startInfoFile.url + ", file name: " + startInfoFile.fileName);
+            if (startInfoFile.summarySizeInMB < 1) {
+                System.out.println("Not known file size - program will try download it anyway.");
+            } else {
+                System.out.println("Expected file size (in MB): " + startInfoFile.summarySizeInMB);
+                checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
+            }
+
+            return startInfoFile.fileName;
+        } finally {
+            FilePartUtils.removeFile(startFilePath);
         }
-
-        return startInfoFile.fileName;
     }
 
     private EndInfoFile tryProcessEndFile(Path filePart) throws DownloadException {
         try {
             EndInfoFile endInfoFile = new EndInfoFile(filePart);
-            endFilePath = Paths.get(downloadPath, "endInfo.txt");
+            Path endFilePath = Paths.get(downloadPath, "endInfo.txt");
             try {
                 Files.move(filePart, endFilePath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new DownloadException(e);
+            } finally {
+                FilePartUtils.removeFile(endFilePath);
             }
             processedFiles.remove(filePart);
 

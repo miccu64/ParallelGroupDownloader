@@ -1,6 +1,8 @@
 package common;
 
 import common.exceptions.DownloadException;
+import common.services.ChecksumService;
+import common.services.UdpcastService;
 import common.utils.FilePartUtils;
 
 import java.io.IOException;
@@ -10,17 +12,25 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class CommonLogic {
+    protected final List<Path> processedFiles = new ArrayList<>();
+    protected final ChecksumService checksumService = new ChecksumService();
+    protected final UdpcastService udpcastService;
     protected final String downloadPath;
 
-    protected CommonLogic(Path downloadPath) throws DownloadException {
+    protected CommonLogic(UdpcastService udpcastService, Path downloadPath) throws DownloadException {
+        this.udpcastService = udpcastService;
         this.downloadPath = downloadPath.toString();
         try {
             Files.createDirectories(downloadPath);
         } catch (IOException e) {
             throw new DownloadException(e, "Could not create download directories");
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
     }
 
     public abstract StatusEnum doWork();
@@ -34,5 +44,11 @@ public abstract class CommonLogic {
             }
         } catch (IOException | URISyntaxException ignored) {
         }
+    }
+
+    protected void cleanup() {
+        udpcastService.stopUdpcast();
+        checksumService.shutdown();
+        FilePartUtils.removeFiles(processedFiles);
     }
 }

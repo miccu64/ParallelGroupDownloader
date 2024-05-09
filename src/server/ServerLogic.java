@@ -1,9 +1,7 @@
 package server;
 
-import common.services.ChecksumService;
 import common.CommonLogic;
 import common.StatusEnum;
-import common.services.UdpcastService;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
@@ -11,79 +9,65 @@ import common.utils.FilePartUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 
 public class ServerLogic extends CommonLogic {
-    private final String url;
-    private final UdpcastService udpcastService;
-    private final ArrayList<Path> processedFiles = new ArrayList<>();
-    private final ChecksumService checksumService = new ChecksumService();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final FileDownloader fileDownloader;
 
     private int processedPartsCount = 0;
-    private Path startFilePath;
-    private Path endFilePath;
 
-    public ServerLogic(String url, int port, String udpcastPath) throws DownloadException {
-        super(Paths.get("downloadsServer"));
-        this.url = url;
-        udpcastService = new ServerUdpcastService(port, udpcastPath);
+    public ServerLogic(String url, int port, String udpcastPath, int partSizeInMB) throws DownloadException {
+        super(new ServerUdpcastService(port, udpcastPath), Paths.get("downloadsServer"));
+
+        fileDownloader = new FileDownloader(url, partSizeInMB, downloadPath);
     }
 
     public StatusEnum doWork() {
         StatusEnum result;
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<StatusEnum> fileDownloaderFuture;
         try {
-            int partSizeInMB = 1;
-            FileDownloader fileDownloader = new FileDownloader(url, partSizeInMB, downloadPath);
-            checkFreeSpace(fileDownloader.getFileSizeInMB(), partSizeInMB);
+            checkFreeSpace(fileDownloader.getFileSizeInMB(), fileDownloader.getBlockSizeInMB());
 
-            fileDownloaderFuture = executorService.submit(fileDownloader);
+            Future<StatusEnum> fileDownloaderFuture = executorService.submit(fileDownloader);
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
 
-            processStartFile(fileDownloader.getFileName(), fileDownloader.getFileSizeInMB(), partSizeInMB);
+            processStartFile();
 
             do {
-                Path fileToProcess = tryGetUnprocessedFile(fileDownloader.getProcessedFiles());
+                Path fileToProcess = tryGetUnprocessedFile();
                 if (fileToProcess != null) {
                     processFilePart(fileToProcess);
                 }
             } while (!fileDownloaderFuture.isDone());
 
-            checkFileDownloaderSuccess(fileDownloaderFuture);
-            processRemainingParts(fileDownloader.getProcessedFiles());
+            processRemainingParts(fileDownloaderFuture);
 
             processEndFile();
-
             FilePartUtils.joinAndRemoveFileParts(processedFiles);
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
-            checksumService.shutdown();
-
-            executorService.shutdown();
-            try {
-                if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException ignored) {
-                executorService.shutdownNow();
-            }
-
             result = StatusEnum.Error;
         } finally {
-            if (startFilePath != null) {
-                processedFiles.add(startFilePath);
-            }
-            if (endFilePath != null) {
-                processedFiles.add(endFilePath);
-            }
-            FilePartUtils.removeFiles(processedFiles);
+            cleanup();
         }
 
         return result;
+    }
+
+    @Override
+    protected void cleanup() {
+        executorService.shutdown();
+
+        super.cleanup();
+
+        try {
+            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException ignored) {
+            executorService.shutdownNow();
+        }
     }
 
     private void checkDownloadIsProperlyStarted(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
@@ -93,15 +77,23 @@ public class ServerLogic extends CommonLogic {
         }
     }
 
-    private void processStartFile(String fileName, int fileSizeInMB, int partSizeInMB) throws DownloadException {
-        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB, partSizeInMB);
-        startFilePath = startInfoFile.filePath;
-        udpcastService.processFile(startFilePath);
+    private void processStartFile() throws DownloadException {
+        String url = fileDownloader.getUrl().toString();
+        String fileName = fileDownloader.getFileName();
+        int fileSizeInMB = fileDownloader.getFileSizeInMB();
+        int blockSizeInMB = fileDownloader.getBlockSizeInMB();
+
+        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB, blockSizeInMB);
+        try {
+            udpcastService.processFile(startInfoFile.filePath);
+        } finally {
+            FilePartUtils.removeFile(startInfoFile.filePath);
+        }
     }
 
-    private Path tryGetUnprocessedFile(List<Path> fileDownloaderProcessedFiles) {
+    private Path tryGetUnprocessedFile() {
         try {
-            return fileDownloaderProcessedFiles.get(processedPartsCount);
+            return fileDownloader.getProcessedFiles().get(processedPartsCount);
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
@@ -127,18 +119,22 @@ public class ServerLogic extends CommonLogic {
         }
     }
 
-    private void processRemainingParts(List<Path> fileDownloaderProcessedFiles) throws DownloadException {
+    private void processRemainingParts(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
+        checkFileDownloaderSuccess(fileDownloaderFuture);
+
         Path fileToProcess;
-        while ((fileToProcess = tryGetUnprocessedFile(fileDownloaderProcessedFiles)) != null) {
+        while ((fileToProcess = tryGetUnprocessedFile()) != null) {
             processFilePart(fileToProcess);
         }
     }
 
     private void processEndFile() throws DownloadException {
-        List<String> checksums = checksumService.getChecksums();
-        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, checksums);
-        endFilePath = endInfoFile.filePath;
-        udpcastService.processFile(endFilePath);
+        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, checksumService.getChecksums());
+        try {
+            udpcastService.processFile(endInfoFile.filePath);
+        } finally {
+            FilePartUtils.removeFile(endInfoFile.filePath);
+        }
     }
 
     private void sleepOneSecond() {

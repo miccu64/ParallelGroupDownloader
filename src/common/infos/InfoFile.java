@@ -31,7 +31,7 @@ public abstract class InfoFile {
             }
 
             long lineCount;
-            try (Stream<String> stream = Files.lines(filePath, StandardCharsets.UTF_8)) {
+            try (Stream<String> stream = Files.lines(filePath, StandardCharsets.ISO_8859_1)) {
                 lineCount = stream.count();
             }
             if (lineCount != 1) {

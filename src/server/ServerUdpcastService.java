@@ -10,7 +10,7 @@ public class ServerUdpcastService extends UdpcastService {
     public ServerUdpcastService(int port, String udpcastPath) throws DownloadException {
         super("udp-sender", new HashMap<String, String>() {{
             put("nokbd", "");
-            put("max-wait", "3");
+            put("min-wait", "2");
             put("min-receivers", "1");
             put("portbase", String.valueOf(port));
             put("retries-until-drop", "30");

@@ -16,6 +16,9 @@ public abstract class UdpcastService {
     private final String udpcastRunCommand;
     private final File udpcastPath;
 
+    private Process process;
+    private BufferedReader reader;
+
     protected UdpcastService(String programName, Map<String, String> params, String udpcastPath) throws DownloadException {
         if (isWindows) {
             programName += ".exe";
@@ -49,7 +52,6 @@ public abstract class UdpcastService {
     public void processFile(Path filePath) throws DownloadException {
         String command = udpcastRunCommand + " --file \"" + filePath.toAbsolutePath() + "\"";
         ProcessBuilder processBuilder = prepareProcessBuilder(command);
-        Process process = null;
         try {
             process = processBuilder.start();
             getProcessOutput(process);
@@ -61,11 +63,21 @@ public abstract class UdpcastService {
                 throw new IOException("Error: exit code=" + exitCode);
             }
         } catch (IOException | InterruptedException e) {
+            stopUdpcast();
             throw new DownloadException(e, "Could not send/receive file: " + filePath.toAbsolutePath());
-        } finally {
-            if (process != null) {
-                process.destroy();
+        }
+    }
+
+    public void stopUdpcast() {
+        if (reader != null) {
+            try {
+                reader.close();
+            } catch (IOException ignored) {
             }
+        }
+
+        if (process != null && process.isAlive()) {
+            process.destroy();
         }
     }
 
@@ -83,12 +95,20 @@ public abstract class UdpcastService {
 
     private void getProcessOutput(Process process) throws IOException {
         try (InputStream is = process.getInputStream();
-             InputStreamReader isReader = new InputStreamReader(is);
-             BufferedReader reader = new BufferedReader(isReader)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-                System.out.flush();
+             InputStreamReader isReader = new InputStreamReader(is)) {
+            reader = new BufferedReader(isReader);
+
+            try {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                    System.out.flush();
+                }
+            } catch (IOException ignored) {
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
             }
         }
     }
