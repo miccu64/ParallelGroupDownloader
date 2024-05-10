@@ -16,8 +16,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class ClientLogic extends CommonLogic {
-    public ClientLogic(int port, String udpcastPath) throws DownloadException {
-        super(new ClientUdpcastService(port, udpcastPath), Paths.get("downloadsClient"));
+    public ClientLogic(int port) throws DownloadException {
+        super(new ClientUdpcastService(port), Paths.get("downloadsClient"));
     }
 
     public StatusEnum doWork() {

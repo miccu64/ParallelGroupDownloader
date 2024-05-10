@@ -3,7 +3,6 @@ downloadsClient/
 filesTest/
 test/docker/disconnectTest/files/
 test/files/
-udpcast/
 
 ### IntelliJ IDEA ###
 out/
@@ -35,4 +34,4 @@ bin/
 ### Mac OS ###
 .DS_Store
 /test/docker/files/
-/test/docker/files/
+/test/docker/redHat/udpcast/

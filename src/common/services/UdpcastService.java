@@ -3,7 +3,6 @@ package common.services;
 import common.exceptions.DownloadException;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -19,22 +18,15 @@ public abstract class UdpcastService {
     private Process process;
     private BufferedReader reader;
 
-    protected UdpcastService(String programName, Map<String, String> params, String udpcastPath) throws DownloadException {
+    protected UdpcastService(String programName, Map<String, String> params) throws DownloadException {
+        String path = String.valueOf(Paths.get(System.getProperty("user.dir"), "lib/udpcast"));
         if (isWindows) {
             programName += ".exe";
-        }
-
-        if (udpcastPath != null) {
-            Path executablePath = Paths.get(udpcastPath, programName);
-            if (!Files.exists(executablePath)) {
-                throw new DownloadException("UDPcast executable does not exist in: " + executablePath);
-            }
-            this.udpcastPath = Paths.get(udpcastPath).toFile();
+            this.udpcastPath = Paths.get(path, "exe").toFile();
         } else {
-            this.udpcastPath = null;
+            programName = "./" + programName;
+            this.udpcastPath = selectProperLinuxVersion(programName, path);
         }
-
-        checkUdpcastPacketPresence(programName);
 
         StringBuilder commandBuilder = new StringBuilder(programName);
         for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -51,7 +43,7 @@ public abstract class UdpcastService {
 
     public void processFile(Path filePath) throws DownloadException {
         String command = udpcastRunCommand + " --file \"" + filePath.toAbsolutePath() + "\"";
-        ProcessBuilder processBuilder = prepareProcessBuilder(command);
+        ProcessBuilder processBuilder = prepareProcessBuilder(command, this.udpcastPath);
         try {
             process = processBuilder.start();
             getProcessOutput(process);
@@ -81,7 +73,7 @@ public abstract class UdpcastService {
         }
     }
 
-    private ProcessBuilder prepareProcessBuilder(String command) {
+    private ProcessBuilder prepareProcessBuilder(String command, File udpcastPath) {
         List<String> params;
         if (isWindows) {
             params = Arrays.asList("cmd.exe", "/c", command);
@@ -89,8 +81,7 @@ public abstract class UdpcastService {
             params = Arrays.asList("/bin/bash", "-c", command);
         }
 
-        return new ProcessBuilder(params).redirectErrorStream(true)
-                .directory(this.udpcastPath);
+        return new ProcessBuilder(params).redirectErrorStream(true).directory(udpcastPath);
     }
 
     private void getProcessOutput(Process process) throws IOException {
@@ -113,19 +104,21 @@ public abstract class UdpcastService {
         }
     }
 
-    private void checkUdpcastPacketPresence(String programName) throws DownloadException {
-        String errorText = "UDPcast packet is not present in system or given directory. "
-                + "Linux: install via 'sudo apt install udpcast'. "
-                + "Windows: download it from https://www.udpcast.linux.lu/";
-        try {
-            Process process = prepareProcessBuilder(programName + " --license").start();
-            process.waitFor(3, TimeUnit.SECONDS);
-            int result = process.exitValue();
-            if (result != 0) {
-                throw new DownloadException(errorText);
+    private File selectProperLinuxVersion(String programName, String path) throws DownloadException {
+        List<String> versions = Arrays.asList("deb-x64", "rpm-x64", "deb-x86", "rpm-x86");
+        for (String version : versions) {
+            try {
+                Path versionPath = Paths.get(path, version, "sbin");
+                Process process = prepareProcessBuilder(programName + " --license", versionPath.toFile()).start();
+                process.waitFor(1, TimeUnit.SECONDS);
+                int result = process.exitValue();
+                if (result == 0) {
+                    return versionPath.toFile();
+                }
+            } catch (IOException | InterruptedException | IllegalThreadStateException ignored) {
             }
-        } catch (IOException | InterruptedException | IllegalThreadStateException e) {
-            throw new DownloadException(e, errorText);
         }
+
+        throw new DownloadException("Cannot run UDPcast library.");
     }
 }

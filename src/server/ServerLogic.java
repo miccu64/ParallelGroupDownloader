@@ -17,8 +17,8 @@ public class ServerLogic extends CommonLogic {
 
     private int processedPartsCount = 0;
 
-    public ServerLogic(String url, int port, String udpcastPath) throws DownloadException {
-        super(new ServerUdpcastService(port, udpcastPath), Paths.get("downloadsServer"));
+    public ServerLogic(String url, int port) throws DownloadException {
+        super(new ServerUdpcastService(port), Paths.get("downloadsServer"));
 
         fileDownloader = new FileDownloader(url, 3, downloadPath);
     }
@@ -59,6 +59,7 @@ public class ServerLogic extends CommonLogic {
     protected void cleanup() {
         executorService.shutdown();
 
+        processedFiles.addAll(fileDownloader.getProcessedFiles());
         super.cleanup();
 
         try {

@@ -1,3 +1,4 @@
+name: two-servers-test
 services:
 
   server:

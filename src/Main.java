@@ -5,12 +5,11 @@ import server.ServerLogic;
 
 public class Main {
     public static void main(String[] args) throws DownloadException, InterruptedException {
-        //String url = "file:/home/lubuntu/Desktop/file.file";
-        String url = "file:/D:/Studia/Magisterka/ParallelGroupDownloader.zip";
-        String udpcastPath = "D:\\Studia\\Magisterka\\ParallelGroupDownloader\\udpcast";
+        String url = "file:/home/lubuntu/Desktop/file.file";
+        //String url = "file:/D:/Studia/Magisterka/ParallelGroupDownloader.zip";
         int port = 9000;
-        CommonLogic clientLogic = new ClientLogic(port, udpcastPath);
-        CommonLogic serverLogic = new ServerLogic(url, port, udpcastPath);
+        CommonLogic clientLogic = new ClientLogic(port);
+        CommonLogic serverLogic = new ServerLogic(url, port);
         Thread client = createThread(clientLogic);
         Thread server = createThread(serverLogic);
         client.join();
@@ -19,7 +18,7 @@ public class Main {
     }
 
     private static void futureMain(String[] args) {
-        
+
     }
 
     private static Thread createThread(CommonLogic logic) {

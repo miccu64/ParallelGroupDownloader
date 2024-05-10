@@ -7,14 +7,14 @@ import java.nio.file.Path;
 import java.util.HashMap;
 
 public class ServerUdpcastService extends UdpcastService {
-    public ServerUdpcastService(int port, String udpcastPath) throws DownloadException {
+    public ServerUdpcastService(int port) throws DownloadException {
         super("udp-sender", new HashMap<String, String>() {{
             put("nokbd", "");
             put("min-wait", "2");
             put("min-receivers", "1");
             put("portbase", String.valueOf(port));
             put("retries-until-drop", "30");
-        }}, udpcastPath);
+        }});
     }
 
     @Override
