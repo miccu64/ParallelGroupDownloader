@@ -10,7 +10,7 @@ public class Main {
         String udpcastPath = "D:\\Studia\\Magisterka\\ParallelGroupDownloader\\udpcast";
         int port = 9000;
         CommonLogic clientLogic = new ClientLogic(port, udpcastPath);
-        CommonLogic serverLogic = new ServerLogic(url, port, udpcastPath, 3);
+        CommonLogic serverLogic = new ServerLogic(url, port, udpcastPath);
         Thread client = createThread(clientLogic);
         Thread server = createThread(serverLogic);
         client.join();

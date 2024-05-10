@@ -17,10 +17,10 @@ public class ServerLogic extends CommonLogic {
 
     private int processedPartsCount = 0;
 
-    public ServerLogic(String url, int port, String udpcastPath, int partSizeInMB) throws DownloadException {
+    public ServerLogic(String url, int port, String udpcastPath) throws DownloadException {
         super(new ServerUdpcastService(port, udpcastPath), Paths.get("downloadsServer"));
 
-        fileDownloader = new FileDownloader(url, partSizeInMB, downloadPath);
+        fileDownloader = new FileDownloader(url, 3, downloadPath);
     }
 
     public StatusEnum doWork() {
