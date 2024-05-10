@@ -1,5 +1,6 @@
 package server;
 
+import common.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.services.UdpcastService;
 
@@ -7,14 +8,17 @@ import java.nio.file.Path;
 import java.util.HashMap;
 
 public class ServerUdpcastService extends UdpcastService {
-    public ServerUdpcastService(int port) throws DownloadException {
+    public ServerUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
         super("udp-sender", new HashMap<String, String>() {{
             put("nokbd", "");
-            put("min-wait", "2");
-            put("min-receivers", "1");
-            put("portbase", String.valueOf(port));
+            put("min-wait", "3");
             put("retries-until-drop", "30");
-        }});
+            put("portbase", String.valueOf(configuration.portbase));
+
+            if (configuration.networkInterface != null) {
+                put("interface", configuration.networkInterface);
+            }
+        }}, configuration.startMaxWaitInSeconds);
     }
 
     @Override
@@ -22,6 +26,16 @@ public class ServerUdpcastService extends UdpcastService {
         super.processFile(filePath);
 
         sleepOneSecond();
+    }
+
+    protected String getVaryingProperties() {
+        String properties;
+        if (isFirstRun) {
+            properties = "--min-wait " + (startMaxWaitInSeconds - 3);
+        } else {
+            properties = "--min-wait 3";
+        }
+        return super.getVaryingProperties() + " " + properties;
     }
 
     private void sleepOneSecond() {

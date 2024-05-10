@@ -2,6 +2,7 @@ package server;
 
 import common.CommonLogic;
 import common.StatusEnum;
+import common.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
@@ -17,10 +18,10 @@ public class ServerLogic extends CommonLogic {
 
     private int processedPartsCount = 0;
 
-    public ServerLogic(String url, int port) throws DownloadException {
-        super(new ServerUdpcastService(port), Paths.get("downloadsServer"));
+    public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
+        super(new ServerUdpcastService(configuration), Paths.get("downloadsServer"));
 
-        fileDownloader = new FileDownloader(url, 3, downloadPath);
+        fileDownloader = new FileDownloader(configuration.url, 3, downloadPath);
     }
 
     public StatusEnum doWork() {

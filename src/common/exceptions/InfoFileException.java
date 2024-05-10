@@ -2,6 +2,6 @@ package common.exceptions;
 
 public class InfoFileException extends Exception {
     public InfoFileException(String message) {
-        super("InfoFile: " + message);
+        super("InfoFile error: " + message);
     }
 }

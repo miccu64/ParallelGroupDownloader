@@ -2,6 +2,7 @@ package client;
 
 import common.CommonLogic;
 import common.StatusEnum;
+import common.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
@@ -16,8 +17,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class ClientLogic extends CommonLogic {
-    public ClientLogic(int port) throws DownloadException {
-        super(new ClientUdpcastService(port), Paths.get("downloadsClient"));
+    public ClientLogic(UdpcastConfiguration configuration) throws DownloadException {
+        super(new ClientUdpcastService(configuration), Paths.get("downloadsClient"));
     }
 
     public StatusEnum doWork() {
