@@ -145,7 +145,6 @@ public class FileDownloader implements Callable<StatusEnum> {
     }
 
     private int findFileSizeInMB() {
-
         URLConnection urlConnection = null;
         try {
             urlConnection = url.openConnection();
