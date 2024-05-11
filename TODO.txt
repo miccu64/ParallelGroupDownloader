@@ -1,2 +1,1 @@
-- wyszukiwanie wspólnego socketu multicastu i oznajmienie go innym instancjom
-- timeout i usunięcie wszystkiego, gdy rozpoczęto pobieranie, ale nic się długo nie dzieje (wyłączenie wszystkich instancji na wszystkich PC)
+- automatyczny dobór rozmiaru parta (ale tak, żeby testy nadal działały)

@@ -22,6 +22,8 @@ public class ClientLogic extends CommonLogic {
     }
 
     public StatusEnum doWork() {
+        System.out.println("Acting as client. Waiting for server...");
+
         StatusEnum result;
         try {
             String fileName = processStartFile();

@@ -18,6 +18,7 @@ public class DownloadException extends Exception {
         message = exceptionName + ": " + message;
 
         System.err.println(message);
+        // TODO: remove line below
         e.printStackTrace(System.err);
     }
 }

@@ -27,6 +27,8 @@ public class ServerLogic extends CommonLogic {
     }
 
     public StatusEnum doWork() {
+        System.out.println("Acting as server.");
+
         StatusEnum result;
         try {
             checkFreeSpace(fileDownloader.getFileSizeInMB(), fileDownloader.getBlockSizeInMB());
