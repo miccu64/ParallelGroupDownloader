@@ -13,12 +13,15 @@ public class ServerUdpcastService extends UdpcastService {
             put("nokbd", "");
             put("min-wait", "3");
             put("retries-until-drop", "30");
-            put("portbase", String.valueOf(configuration.portbase));
+            put("portbase", String.valueOf(configuration.getPortbase()));
 
-            if (configuration.networkInterface != null) {
-                put("interface", configuration.networkInterface);
+            int thirtyMinutesAsSeconds = 30 * 60;
+            put("start-timeout", String.valueOf(thirtyMinutesAsSeconds));
+
+            if (configuration.getNetworkInterface() != null) {
+                put("interface", configuration.getNetworkInterface());
             }
-        }}, configuration.startMaxWaitInSeconds);
+        }});
     }
 
     @Override
@@ -26,16 +29,6 @@ public class ServerUdpcastService extends UdpcastService {
         super.processFile(filePath);
 
         sleepOneSecond();
-    }
-
-    protected String getVaryingProperties() {
-        String properties;
-        if (isFirstRun) {
-            properties = "--min-wait " + (startMaxWaitInSeconds - 3);
-        } else {
-            properties = "--min-wait 3";
-        }
-        return super.getVaryingProperties() + " " + properties;
     }
 
     private void sleepOneSecond() {

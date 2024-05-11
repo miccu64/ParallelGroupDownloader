@@ -11,9 +11,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public abstract class UdpcastService {
-    protected final int startMaxWaitInSeconds;
-    protected boolean isFirstRun = true;
-
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
     private final String udpcastRunCommand;
     private final File udpcastPath;
@@ -21,12 +18,7 @@ public abstract class UdpcastService {
     private Process process;
     private BufferedReader reader;
 
-    protected UdpcastService(String programName, Map<String, String> params, int startMaxWaitInSeconds) throws DownloadException {
-        if (startMaxWaitInSeconds < 6) {
-            throw new DownloadException("Start max wait must be >= 6.");
-        }
-        this.startMaxWaitInSeconds = startMaxWaitInSeconds;
-
+    protected UdpcastService(String programName, Map<String, String> params) throws DownloadException {
         String path = String.valueOf(Paths.get(System.getProperty("user.dir"), "lib/udpcast"));
         if (isWindows) {
             programName += ".exe";
@@ -50,7 +42,7 @@ public abstract class UdpcastService {
     }
 
     public void processFile(Path filePath) throws DownloadException {
-        String command = udpcastRunCommand + " " + getVaryingProperties() + " --file \"" + filePath.toAbsolutePath() + "\"";
+        String command = udpcastRunCommand + " " + " --file \"" + filePath.toAbsolutePath() + "\"";
         ProcessBuilder processBuilder = prepareProcessBuilder(command, this.udpcastPath);
         try {
             process = processBuilder.start();
@@ -78,15 +70,6 @@ public abstract class UdpcastService {
 
         if (process != null && process.isAlive()) {
             process.destroy();
-        }
-    }
-
-    protected String getVaryingProperties() {
-        if (isFirstRun) {
-            isFirstRun = false;
-            return "--start-timeout " + startMaxWaitInSeconds;
-        } else {
-            return "--start-timeout 30";
         }
     }
 

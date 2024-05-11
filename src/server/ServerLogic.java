@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.*;
 
 public class ServerLogic extends CommonLogic {
+    private final int delay;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final FileDownloader fileDownloader;
 
@@ -21,7 +22,8 @@ public class ServerLogic extends CommonLogic {
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
         super(new ServerUdpcastService(configuration), Paths.get("downloadsServer"));
 
-        fileDownloader = new FileDownloader(configuration.url, 500, downloadPath);
+        delay = configuration.getDelayMinutes();
+        fileDownloader = new FileDownloader(configuration.getUrl(), 500, downloadPath);
     }
 
     public StatusEnum doWork() {
@@ -32,6 +34,7 @@ public class ServerLogic extends CommonLogic {
             Future<StatusEnum> fileDownloaderFuture = executorService.submit(fileDownloader);
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
 
+            delayIfRequested();
             processStartFile();
 
             do {
@@ -76,6 +79,16 @@ public class ServerLogic extends CommonLogic {
         sleepOneSecond();
         if (fileDownloaderFuture.isDone()) {
             checkFileDownloaderSuccess(fileDownloaderFuture);
+        }
+    }
+
+    private void delayIfRequested() {
+        if (delay > 0) {
+            System.out.println("Starting delay for seconds: " + delay);
+            for (int i = 0; i < delay; i++) {
+                sleepOneSecond();
+            }
+            System.out.println("Delay end.");
         }
     }
 

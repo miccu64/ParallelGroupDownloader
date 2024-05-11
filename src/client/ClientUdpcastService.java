@@ -11,11 +11,14 @@ public class ClientUdpcastService extends UdpcastService {
         super("udp-receiver", new HashMap<String, String>() {{
             put("nokbd", "");
             put("receive-timeout", "30");
-            put("portbase", String.valueOf(configuration.portbase));
+            put("portbase", String.valueOf(configuration.getPortbase()));
 
-            if (configuration.networkInterface != null) {
-                put("interface", configuration.networkInterface);
+            int thirtyMinutesAsSeconds = 30 * 60;
+            put("start-timeout", String.valueOf(thirtyMinutesAsSeconds));
+
+            if (configuration.getNetworkInterface() != null) {
+                put("interface", configuration.getNetworkInterface());
             }
-        }}, configuration.startMaxWaitInSeconds);
+        }});
     }
 }

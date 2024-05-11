@@ -3,10 +3,26 @@ package common;
 import common.exceptions.ConfigurationException;
 
 public class UdpcastConfiguration {
-    public int portbase = 9000;
-    public int startMaxWaitInSeconds = 6;
-    public String url;
-    public String networkInterface;
+    private int portbase = 9000;
+    private int delayMinutes = 0;
+    private String url;
+    private String networkInterface;
+
+    public int getPortbase() {
+        return portbase;
+    }
+
+    public int getDelayMinutes() {
+        return delayMinutes;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public String getNetworkInterface() {
+        return networkInterface;
+    }
 
     public UdpcastConfiguration(String[] args) throws ConfigurationException {
         if (args.length % 2 != 0) {
@@ -21,21 +37,21 @@ public class UdpcastConfiguration {
                 switch (key) {
                     case "portbase":
                         portbase = Integer.parseUnsignedInt(value);
-                        if (portbase < 1) {
+                        if (getPortbase() < 1) {
                             throw new ConfigurationException("Portbase must be > 0.");
                         }
                         break;
-                    case "start-max-wait":
-                        startMaxWaitInSeconds = Integer.parseUnsignedInt(value);
-                        if (startMaxWaitInSeconds < 6) {
-                            throw new ConfigurationException("Start max wait must be >= 6.");
+                    case "interface":
+                        networkInterface = value;
+                        break;
+                    case "delay":
+                        delayMinutes = Integer.parseUnsignedInt(value);
+                        if (getDelayMinutes() >= 30) {
+                            throw new ConfigurationException("Delay must be shorter than 30 minutes.");
                         }
                         break;
                     case "url":
                         url = value;
-                        break;
-                    case "interface":
-                        networkInterface = value;
                         break;
                     default:
                         throw new ConfigurationException(key, value);
@@ -43,6 +59,10 @@ public class UdpcastConfiguration {
             } catch (RuntimeException e) {
                 throw new ConfigurationException(key, value);
             }
+        }
+
+        if (getUrl() == null && getDelayMinutes() > 0) {
+            throw new ConfigurationException("Delay option is applicable only when URL is given.");
         }
     }
 
