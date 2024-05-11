@@ -1,7 +1,7 @@
 package server;
 
-import common.models.StatusEnum;
 import common.exceptions.DownloadException;
+import common.models.StatusEnum;
 import common.utils.FilePartUtils;
 
 import java.io.File;
@@ -80,13 +80,15 @@ public class FileDownloader implements Callable<StatusEnum> {
             do {
                 Path filePartPath = createFilePartPath(blockNumber);
                 File partFile = filePartPath.toFile();
+                partFile.deleteOnExit();
                 blockNumber++;
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
                      FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
+                    System.out.println("Downloading: " + filePartPath.getFileName());
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
-                    FilePartUtils.removeFile(filePartPath);
+                    processedFiles.add(filePartPath);
                     return handleDownloadError(e, "Cannot save to file: " + partFile);
                 }
 
@@ -129,7 +131,6 @@ public class FileDownloader implements Callable<StatusEnum> {
         System.out.println(message);
         e.printStackTrace(System.out);
 
-        FilePartUtils.removeFiles(new ArrayList<>(processedFiles));
         return StatusEnum.Error;
     }
 

@@ -97,7 +97,9 @@ public class ClientLogic extends CommonLogic {
     }
 
     private Path generateFilePartPath(String fileName, int partCount) {
-        return Paths.get(downloadPath, fileName + ".part" + partCount);
+        Path path = Paths.get(downloadPath, fileName + ".part" + partCount);
+        path.toFile().deleteOnExit();
+        return path;
     }
 
     private void compareChecksums(List<String> expectedChecksums, List<String> actualChecksums) throws DownloadException {

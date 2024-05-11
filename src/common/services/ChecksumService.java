@@ -35,14 +35,7 @@ public class ChecksumService {
     }
 
     public void shutdown() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException ignored) {
-            executorService.shutdownNow();
-        }
+        executorService.shutdownNow();
     }
 
     private String fileChecksum(Path filePath) throws DownloadException {

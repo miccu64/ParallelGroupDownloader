@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.*;
 
 public class ServerLogic extends CommonLogic {
-    private final int delay;
+    private final int delayInMinutes;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final FileDownloader fileDownloader;
 
@@ -22,7 +22,7 @@ public class ServerLogic extends CommonLogic {
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
         super(new ServerUdpcastService(configuration), Paths.get("downloadsServer"));
 
-        delay = configuration.getDelayMinutes();
+        delayInMinutes = configuration.getDelayMinutes();
         fileDownloader = new FileDownloader(configuration.getUrl(), 500, downloadPath);
     }
 
@@ -63,33 +63,22 @@ public class ServerLogic extends CommonLogic {
 
     @Override
     protected void cleanup() {
-        executorService.shutdown();
+        executorService.shutdownNow();
 
-        processedFiles.addAll(fileDownloader.getProcessedFiles());
         super.cleanup();
-
-        try {
-            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException ignored) {
-            executorService.shutdownNow();
-        }
     }
 
     private void checkDownloadIsProperlyStarted(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
-        sleepOneSecond();
+        sleep(1);
         if (fileDownloaderFuture.isDone()) {
             checkFileDownloaderSuccess(fileDownloaderFuture);
         }
     }
 
     private void delayIfRequested() {
-        if (delay > 0) {
-            System.out.println("Starting delay for seconds: " + delay);
-            for (int i = 0; i < delay; i++) {
-                sleepOneSecond();
-            }
+        if (delayInMinutes > 0) {
+            System.out.println("Starting delay for seconds: " + delayInMinutes);
+            sleep(delayInMinutes * 60);
             System.out.println("Delay end.");
         }
     }
@@ -154,9 +143,9 @@ public class ServerLogic extends CommonLogic {
         }
     }
 
-    private void sleepOneSecond() {
+    private void sleep(int timeInSeconds) {
         try {
-            Thread.sleep(1000);
+            Thread.sleep(1000L * timeInSeconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
