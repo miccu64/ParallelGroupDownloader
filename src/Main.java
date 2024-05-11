@@ -1,6 +1,6 @@
 import client.ClientLogic;
 import common.CommonLogic;
-import common.UdpcastConfiguration;
+import common.models.UdpcastConfiguration;
 import common.exceptions.ConfigurationException;
 import common.exceptions.DownloadException;
 import server.ServerLogic;

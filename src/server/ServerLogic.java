@@ -1,8 +1,8 @@
 package server;
 
 import common.CommonLogic;
-import common.StatusEnum;
-import common.UdpcastConfiguration;
+import common.models.StatusEnum;
+import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;

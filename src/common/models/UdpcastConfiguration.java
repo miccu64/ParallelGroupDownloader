@@ -1,4 +1,4 @@
-package common;
+package common.models;
 
 import common.exceptions.ConfigurationException;
 
@@ -37,8 +37,8 @@ public class UdpcastConfiguration {
                 switch (key) {
                     case "portbase":
                         portbase = Integer.parseUnsignedInt(value);
-                        if (getPortbase() < 1) {
-                            throw new ConfigurationException("Portbase must be > 0.");
+                        if (portbase < 1024 || portbase > 65535) {
+                            throw new ConfigurationException("Only ports 1024-65535 are allowed.");
                         }
                         break;
                     case "interface":
@@ -46,7 +46,7 @@ public class UdpcastConfiguration {
                         break;
                     case "delay":
                         delayMinutes = Integer.parseUnsignedInt(value);
-                        if (getDelayMinutes() >= 30) {
+                        if (delayMinutes >= 30) {
                             throw new ConfigurationException("Delay must be shorter than 30 minutes.");
                         }
                         break;
@@ -61,7 +61,7 @@ public class UdpcastConfiguration {
             }
         }
 
-        if (getUrl() == null && getDelayMinutes() > 0) {
+        if (url == null && delayMinutes > 0) {
             throw new ConfigurationException("Delay option is applicable only when URL is given.");
         }
     }

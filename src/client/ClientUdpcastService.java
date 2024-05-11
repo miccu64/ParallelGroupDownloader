@@ -1,6 +1,6 @@
 package client;
 
-import common.UdpcastConfiguration;
+import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.services.UdpcastService;
 

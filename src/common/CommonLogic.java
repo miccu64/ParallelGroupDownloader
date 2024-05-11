@@ -1,6 +1,7 @@
 package common;
 
 import common.exceptions.DownloadException;
+import common.models.StatusEnum;
 import common.services.ChecksumService;
 import common.services.UdpcastService;
 import common.utils.FilePartUtils;

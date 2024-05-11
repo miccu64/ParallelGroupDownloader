@@ -1,6 +1,6 @@
 package server;
 
-import common.StatusEnum;
+import common.models.StatusEnum;
 import common.exceptions.DownloadException;
 import common.utils.FilePartUtils;
 
