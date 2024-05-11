@@ -23,7 +23,7 @@ public class EndInfoFileTests {
     private final static String testDirectory = String.valueOf(Paths.get(CommonUtils.testDirectory, "EndInfoFileTests"));
 
     @BeforeAll
-    public static void beforeAll() throws DownloadException, IOException {
+    public static void beforeAll() throws IOException {
         CommonUtils.beforeAll(testDirectory);
     }
 

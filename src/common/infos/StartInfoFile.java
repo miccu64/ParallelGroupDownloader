@@ -18,6 +18,10 @@ public class StartInfoFile extends InfoFile {
     private final String separator = "_#!@%&#_";
 
     public StartInfoFile(String saveDirectory, String url, String fileName, int summarySizeInMB, int partSizeInMB) throws DownloadException {
+        if (saveDirectory.isEmpty() || url.isEmpty() || fileName.isEmpty() || summarySizeInMB < 0 || partSizeInMB < 1) {
+            throw new DownloadException("Wrong StartInfo file data.");
+        }
+
         this.url = url;
         this.fileName = fileName;
         this.summarySizeInMB = summarySizeInMB;
