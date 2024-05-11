@@ -8,7 +8,8 @@ import server.ServerLogic;
 public class Main {
     public static void main(String[] args) throws DownloadException, InterruptedException, ConfigurationException {
         //String url = "file:/home/lubuntu/Desktop/file.file";
-        String url = "file:/D:/Studia/Magisterka/ParallelGroupDownloader.zip";
+        //String url = "file:/D:/Studia/Magisterka/ParallelGroupDownloader.zip";
+        String url = "D:\\Programy\\VirtualBoxMachines";
         UdpcastConfiguration configurationClient = new UdpcastConfiguration(args);
         CommonLogic clientLogic = new ClientLogic(configurationClient);
         String[] serverArgs = new String[]{"-url", url};

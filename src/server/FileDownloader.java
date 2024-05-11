@@ -47,17 +47,20 @@ public class FileDownloader implements Callable<StatusEnum> {
         return FilePartUtils.bytesToMegabytes(blockSizeInBytes);
     }
 
-    public FileDownloader(String url, int blockSizeInMB, String downloadPath) throws DownloadException {
-        if (url == null || url.isEmpty()) {
+    public FileDownloader(String urlString, int blockSizeInMB, String downloadPath) throws DownloadException {
+        if (urlString == null || urlString.isEmpty()) {
             throw new DownloadException("Empty url.");
         }
 
         try {
-            URI uri = new URI(url);
+            URI uri = parseUri(urlString);
             this.url = uri.toURL();
-            fileName = getFileNameFromUrl(uri);
+
+            tryCheckIsFile(uri);
+
+            fileName = getFileName(uri);
             filePath = Paths.get(downloadPath, fileName);
-        } catch (IllegalArgumentException | MalformedURLException | URISyntaxException e) {
+        } catch (IllegalArgumentException | MalformedURLException e) {
             throw new DownloadException(e, "Malformed URL.");
         }
 
@@ -100,6 +103,28 @@ public class FileDownloader implements Callable<StatusEnum> {
         return StatusEnum.Success;
     }
 
+    private URI parseUri(String urlString) {
+        URI uri;
+        try {
+            uri = new URI(urlString);
+        } catch (Exception e) {
+            uri = Paths.get(urlString).toUri();
+        }
+        return uri;
+    }
+
+    private void tryCheckIsFile(URI uri) throws DownloadException {
+        if (url.getProtocol().equals("file")) {
+            File file = Paths.get(uri).toFile();
+            if (!file.exists()) {
+                throw new DownloadException("File at given path does not exist.");
+            }
+            if (!file.isFile()) {
+                throw new DownloadException("Given path does not point to file.");
+            }
+        }
+    }
+
     private StatusEnum handleDownloadError(Exception e, String message) {
         System.out.println(message);
         e.printStackTrace(System.out);
@@ -108,7 +133,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         return StatusEnum.Error;
     }
 
-    private String getFileNameFromUrl(URI uri) {
+    private String getFileName(URI uri) {
         Path path;
         try {
             path = Paths.get(uri.getPath());

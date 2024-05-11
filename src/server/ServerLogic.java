@@ -21,7 +21,7 @@ public class ServerLogic extends CommonLogic {
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
         super(new ServerUdpcastService(configuration), Paths.get("downloadsServer"));
 
-        fileDownloader = new FileDownloader(configuration.url, 3, downloadPath);
+        fileDownloader = new FileDownloader(configuration.url, 1000, downloadPath);
     }
 
     public StatusEnum doWork() {

@@ -12,7 +12,6 @@ import utils.CommonUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,10 +42,8 @@ public class DownloaderTests {
         Path filePathToDownload = CommonUtils.generateFile(fileName, testDirectory, 5);
         filesToDelete.add(filePathToDownload);
 
-        URL url = filePathToDownload.toUri().toURL();
-
         // Act
-        FileDownloader fileDownloader = createFileDownloader(url.toString(), 2);
+        FileDownloader fileDownloader = createFileDownloader(filePathToDownload.toString(), 2);
         StatusEnum result = fileDownloader.call();
         filesToDelete.addAll(fileDownloader.getProcessedFiles());
 
@@ -71,12 +68,10 @@ public class DownloaderTests {
         // Arrange
         String fileName = "shouldDivideDownloadedFileWithExactPartSize";
         Path filePathToDownload = generateFile(fileName, 3);
-
-        URL url = filePathToDownload.toUri().toURL();
         int blockSizeInMB = 1;
 
         // Act
-        FileDownloader fileDownloader = createFileDownloader(url.toString(), blockSizeInMB);
+        FileDownloader fileDownloader = createFileDownloader(filePathToDownload.toString(), blockSizeInMB);
         StatusEnum result = fileDownloader.call();
         filesToDelete.addAll(fileDownloader.getProcessedFiles());
 
@@ -96,10 +91,8 @@ public class DownloaderTests {
         String fileName = "shouldPartSummarySizeEqualJoinedSize";
         Path filePathToDownload = generateFile(fileName, 5);
 
-        URL url = filePathToDownload.toUri().toURL();
-
         // Act
-        FileDownloader fileDownloader = createFileDownloader(url.toString(), 2);
+        FileDownloader fileDownloader = createFileDownloader(filePathToDownload.toString(), 2);
         StatusEnum result = fileDownloader.call();
         List<Path> processedFiles = fileDownloader.getProcessedFiles();
         filesToDelete.addAll(processedFiles);
@@ -124,12 +117,10 @@ public class DownloaderTests {
         // Arrange
         String fileName = "shouldFileDownloaderGetProperLocalFileSize";
         Path filePathToDownload = generateFile(fileName, 1);
-
         int expectedSize = FilePartUtils.bytesToMegabytes(Files.size(filePathToDownload));
-        URL url = filePathToDownload.toUri().toURL();
 
         // Act
-        FileDownloader fileDownloader = createFileDownloader(url.toString(), 1);
+        FileDownloader fileDownloader = createFileDownloader(filePathToDownload.toString(), 1);
         long fileDownloaderSize = fileDownloader.getFileSizeInMB();
 
         // Assert
@@ -142,10 +133,8 @@ public class DownloaderTests {
         String expectedFileName = "shouldReturnProperFileNameFromLocalFile";
         Path filePathToDownload = generateFile(expectedFileName, 1);
 
-        URL url = filePathToDownload.toUri().toURL();
-
         // Act
-        FileDownloader fileDownloader = createFileDownloader(url.toString(), 1);
+        FileDownloader fileDownloader = createFileDownloader(filePathToDownload.toString(), 1);
         String fileName = fileDownloader.getFileName();
 
         // Assert
@@ -180,20 +169,44 @@ public class DownloaderTests {
     }
 
     @Test
-    public void shouldThrowWhenFileNotExists() throws IOException, DownloadException {
+    public void shouldWorkWithDifferentPathFormats() throws IOException, DownloadException {
+        // Arrange
+        String expectedFileName = "shouldWorkForDifferentPathFormats";
+        int fileSize = 1;
+        Path filePathToDownload = generateFile(expectedFileName, fileSize);
+
+        List<String> paths = new ArrayList<>();
+        paths.add(filePathToDownload.toString());
+        paths.add(filePathToDownload.toAbsolutePath().toString());
+        paths.add(filePathToDownload.toUri().toString());
+        paths.add(filePathToDownload.toUri().toURL().toString());
+
+        // Act / Assert
+        for (String path : paths) {
+            FileDownloader fileDownloader = createFileDownloader(path, 2);
+            Assertions.assertEquals(fileSize, fileDownloader.getFileSizeInMB());
+            Assertions.assertEquals(expectedFileName, fileDownloader.getFileName());
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenDirectoryGiven() {
+        // Arrange
+        Path directory = Paths.get(fileDownloaderDirectory).toAbsolutePath();
+
+        // Act / Assert
+        Assertions.assertThrowsExactly(DownloadException.class, () -> createFileDownloader(directory.toString(), 1));
+    }
+
+    @Test
+    public void shouldThrowWhenFileNotExists() {
         // Arrange
         Path notExistingFile = Paths.get("shouldThrowWhenFileNotExists.file").toAbsolutePath();
         File f = notExistingFile.toFile();
         Assertions.assertFalse(f.exists());
 
-        String notExistingFileUrl = notExistingFile.toUri().toURL().toString();
-        FileDownloader fileDownloader = createFileDownloader(notExistingFileUrl, 1);
-
-        // Act
-        StatusEnum result = fileDownloader.call();
-
-        // Assert
-        Assertions.assertEquals(StatusEnum.Error, result);
+        // Act / Assert
+        Assertions.assertThrowsExactly(DownloadException.class, () -> createFileDownloader(notExistingFile.toString(), 1));
     }
 
     @Test
