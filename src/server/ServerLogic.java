@@ -63,7 +63,14 @@ public class ServerLogic extends CommonLogic {
 
     @Override
     protected void cleanup() {
-        executorService.shutdownNow();
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException ignored) {
+            executorService.shutdownNow();
+        }
 
         super.cleanup();
     }

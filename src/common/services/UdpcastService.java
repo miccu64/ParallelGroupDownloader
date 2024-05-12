@@ -19,7 +19,6 @@ public abstract class UdpcastService {
 
     private final List<String> runParams;
     private Process process;
-    private BufferedReader reader;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
         URL resourceUrl;
@@ -69,24 +68,22 @@ public abstract class UdpcastService {
     }
 
     public void stopUdpcast() {
-        if (reader != null) {
-            try {
-                reader.close();
-            } catch (IOException ignored) {
-            }
-        }
-
         if (process != null) {
             process.destroy();
-            process.destroyForcibly();
+            try {
+                if (!process.waitFor(1, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                }
+            } catch (InterruptedException ignored) {
+                process.destroyForcibly();
+            }
         }
     }
 
     private void getProcessOutput(Process process) throws IOException {
         try (InputStream is = process.getInputStream();
-             InputStreamReader isReader = new InputStreamReader(is)) {
-            reader = new BufferedReader(isReader);
-
+             InputStreamReader isReader = new InputStreamReader(is);
+             BufferedReader reader = new BufferedReader(isReader)) {
             try {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -94,10 +91,6 @@ public abstract class UdpcastService {
                     System.out.flush();
                 }
             } catch (IOException ignored) {
-            }
-        } finally {
-            if (reader != null) {
-                reader.close();
             }
         }
     }
