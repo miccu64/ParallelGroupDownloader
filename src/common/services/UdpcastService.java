@@ -52,7 +52,6 @@ public abstract class UdpcastService {
 
             process.waitFor(1, TimeUnit.SECONDS);
             int exitCode = process.exitValue();
-            System.out.println("Process exited with code: " + exitCode);
             if (exitCode != 0) {
                 throw new IOException("Error: exit code=" + exitCode);
             }
@@ -92,27 +91,28 @@ public abstract class UdpcastService {
     }
 
     private String selectProperLinuxVersion(String programName) throws DownloadException {
+        StringBuilder errors = new StringBuilder();
         List<String> versions = Arrays.asList("deb-x64", "rpm-x64", "deb-x86", "rpm-x86");
         for (String version : versions) {
             try {
                 String executableUrl = extractExecutable("/udpcast/" + version + "/" + programName, programName);
                 Process process = new ProcessBuilder(executableUrl, "--license").redirectErrorStream(true).start();
                 process.waitFor(1, TimeUnit.SECONDS);
-                int result = process.exitValue();
-                if (result == 0) {
+                if (process.exitValue() == 0) {
                     return executableUrl;
                 }
-            } catch (IOException | InterruptedException | IllegalThreadStateException ignored) {
+            } catch (IOException | InterruptedException | IllegalThreadStateException e) {
+                errors.append(e.getMessage());
             }
         }
 
-        throw new DownloadException("Cannot run UDPcast library.");
+        throw new DownloadException("Cannot run udpcast library. Probably not supported OS. Inner messages: " + errors);
     }
 
     private String extractExecutable(String resourcePath, String programName) throws DownloadException {
         URL executableUrl = UdpcastService.class.getResource(resourcePath);
         if (executableUrl == null) {
-            throw new DownloadException("Could not load UDPcast packet files.");
+            throw new DownloadException("Could not load udpcast packet files from resources.");
         }
 
         try {
@@ -131,7 +131,7 @@ public abstract class UdpcastService {
             }
             return file.getPath();
         } catch (IOException e) {
-            throw new DownloadException("Could not load UDPcast packet files.");
+            throw new DownloadException("Could not load udpcast packet files from resources.");
         }
     }
 }

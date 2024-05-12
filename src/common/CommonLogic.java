@@ -2,7 +2,7 @@ package common;
 
 import common.exceptions.DownloadException;
 import common.models.StatusEnum;
-import common.services.ChecksumService;
+import common.services.FileService;
 import common.services.UdpcastService;
 import common.utils.FilePartUtils;
 
@@ -18,9 +18,10 @@ import java.util.List;
 
 public abstract class CommonLogic {
     protected final List<Path> processedFiles = new ArrayList<>();
-    protected final ChecksumService checksumService = new ChecksumService();
     protected final UdpcastService udpcastService;
     protected final String downloadPath;
+
+    protected FileService fileService;
 
     protected CommonLogic(UdpcastService udpcastService, Path downloadPath) throws DownloadException {
         this.udpcastService = udpcastService;
@@ -49,7 +50,10 @@ public abstract class CommonLogic {
 
     protected void cleanup() {
         udpcastService.stopUdpcast();
-        checksumService.shutdown();
+
+        if (fileService != null) {
+            fileService.shutdown();
+        }
 
         FilePartUtils.removeFiles(processedFiles);
     }

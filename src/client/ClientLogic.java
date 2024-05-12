@@ -7,6 +7,7 @@ import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
+import common.services.FileService;
 import common.utils.FilePartUtils;
 
 import java.io.IOException;
@@ -28,6 +29,8 @@ public class ClientLogic extends CommonLogic {
         try {
             String fileName = processStartFile();
 
+            fileService = new FileService(Paths.get(this.downloadPath, fileName));
+
             EndInfoFile endInfoFile = null;
             int partCount = 0;
             while (endInfoFile == null) {
@@ -38,14 +41,14 @@ public class ClientLogic extends CommonLogic {
 
                 endInfoFile = tryProcessEndFile(filePart);
                 if (endInfoFile == null) {
-                    checksumService.addFileToProcess(filePart);
+                    fileService.addFileToProcess(filePart);
                 }
 
                 // TODO: avoid infinite loop
             }
 
-            compareChecksums(endInfoFile.getChecksums(), checksumService.getChecksums());
-            FilePartUtils.joinAndRemoveFileParts(processedFiles);
+            compareChecksums(endInfoFile.getChecksums(), fileService.waitForChecksums());
+            fileService.waitForFilesJoin();
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {

@@ -18,6 +18,7 @@ public abstract class InfoFile {
     protected void saveToFile(Path filePath) throws DownloadException {
         try {
             Files.write(filePath, toString().getBytes());
+            filePath.toFile().deleteOnExit();
         } catch (IOException e) {
             throw new DownloadException(e, "Could not save file: " + filePath);
         }

@@ -6,6 +6,7 @@ import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
+import common.services.FileService;
 import common.utils.FilePartUtils;
 
 import java.nio.file.Path;
@@ -37,7 +38,9 @@ public class ServerLogic extends CommonLogic {
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
 
             delayIfRequested();
+
             processStartFile();
+            fileService = new FileService(Paths.get(this.downloadPath, fileDownloader.getFileName()));
 
             do {
                 Path fileToProcess = tryGetUnprocessedFile();
@@ -49,7 +52,7 @@ public class ServerLogic extends CommonLogic {
             processRemainingParts(fileDownloaderFuture);
 
             processEndFile();
-            FilePartUtils.joinAndRemoveFileParts(processedFiles);
+            fileService.waitForFilesJoin();
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
@@ -116,7 +119,7 @@ public class ServerLogic extends CommonLogic {
         processedFiles.add(filePath);
 
         udpcastService.processFile(filePath);
-        checksumService.addFileToProcess(filePath);
+        fileService.addFileToProcess(filePath);
 
         processedPartsCount++;
     }
@@ -142,7 +145,7 @@ public class ServerLogic extends CommonLogic {
     }
 
     private void processEndFile() throws DownloadException {
-        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, checksumService.getChecksums());
+        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, fileService.waitForChecksums());
         try {
             udpcastService.processFile(endInfoFile.filePath);
         } finally {
