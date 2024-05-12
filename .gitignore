@@ -3,6 +3,12 @@ downloadsClient/
 filesTest/
 test/docker/disconnectTest/files/
 test/files/
+/test/docker/files/
+/test/docker/redHat/udpcast/
+udp-receiver.exe
+udp-sender.exe
+udp-receiver
+udp-sender
 
 ### IntelliJ IDEA ###
 out/
@@ -33,5 +39,3 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-/test/docker/files/
-/test/docker/redHat/udpcast/

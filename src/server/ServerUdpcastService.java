@@ -1,27 +1,21 @@
 package server;
 
-import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
+import common.models.UdpcastConfiguration;
 import common.services.UdpcastService;
 
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ServerUdpcastService extends UdpcastService {
     public ServerUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
-        super("udp-sender", new HashMap<String, String>() {{
-            put("nokbd", "");
-            put("min-wait", "3");
-            put("retries-until-drop", "30");
-            put("portbase", String.valueOf(configuration.getPortbase()));
-
-            int thirtyMinutesAsSeconds = 30 * 60;
-            put("start-timeout", String.valueOf(thirtyMinutesAsSeconds));
-
-            if (configuration.getNetworkInterface() != null) {
-                put("interface", configuration.getNetworkInterface());
-            }
-        }});
+        super("udp-sender", configuration,
+                new ArrayList<>(Arrays.asList(
+                        "--min-wait", "3",
+                        "--retries-until-drop", "30",
+                        "--start-timeout", String.valueOf(30 * 60)
+                )));
     }
 
     @Override
