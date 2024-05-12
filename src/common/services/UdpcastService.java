@@ -18,17 +18,13 @@ public abstract class UdpcastService {
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
     private final List<String> runParams;
+    private final String executablePath;
+    private final String programName;
     private Process process;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
-        String executablePath;
-        if (isWindows) {
-            URL resourceUrl = getResource("/udpcast/exe/" + programName + ".exe");
-            executablePath = getExecutable(resourceUrl, programName);
-        } else {
-            URL resourceUrl = selectProperLinuxVersion(programName);
-            executablePath = "./" + getExecutable(resourceUrl, programName);
-        }
+        this.programName = programName;
+        this.executablePath = prepareExecutable();
 
         params.add(0, executablePath);
         params.add("--nokbd");
@@ -43,6 +39,10 @@ public abstract class UdpcastService {
     }
 
     public void processFile(Path filePath) throws DownloadException {
+        if (!Files.exists(Paths.get(executablePath))) {
+            prepareExecutable();
+        }
+
         List<String> params = new ArrayList<>(runParams);
         params.add("--file");
         params.add(filePath.toAbsolutePath().toString());
@@ -80,6 +80,17 @@ public abstract class UdpcastService {
         }
     }
 
+    private String prepareExecutable() throws DownloadException {
+        String path;
+        if (isWindows) {
+            URL resourceUrl = getResource("/udpcast/exe/" + programName + ".exe");
+            path = extractExecutable(resourceUrl, programName);
+        } else {
+            path = "./" + selectProperLinuxVersion(programName);
+        }
+        return path;
+    }
+
     private void getProcessOutput(Process process) throws IOException {
         try (InputStream is = process.getInputStream();
              InputStreamReader isReader = new InputStreamReader(is);
@@ -103,12 +114,12 @@ public abstract class UdpcastService {
         return url;
     }
 
-    private URL selectProperLinuxVersion(String programName) throws DownloadException {
+    private String selectProperLinuxVersion(String programName) throws DownloadException {
         List<String> versions = Arrays.asList("deb-x64", "rpm-x64", "deb-x86", "rpm-x86");
         for (String version : versions) {
             try {
-                URL executableUrl = getResource("/udpcast/" + version + "/sbin/" + programName);
-                Process process = new ProcessBuilder(executableUrl.getPath(), "--license").redirectErrorStream(true).start();
+                String executableUrl = extractExecutable(getResource("/udpcast/" + version + "/sbin/" + programName), programName);
+                Process process = new ProcessBuilder("./" + executableUrl, "--license").redirectErrorStream(true).start();
                 process.waitFor(1, TimeUnit.SECONDS);
                 int result = process.exitValue();
                 if (result == 0) {
@@ -122,7 +133,7 @@ public abstract class UdpcastService {
         throw new DownloadException("Cannot run UDPcast library.");
     }
 
-    private String getExecutable(URL executableUrl, String programName) throws DownloadException {
+    private String extractExecutable(URL executableUrl, String programName) throws DownloadException {
         try {
             String extension = isWindows ? ".exe" : "";
             File file;

@@ -53,7 +53,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         }
 
         try {
-            URI uri = parseUri(urlString);
+            URI uri = parseUrl(urlString);
             this.url = uri.toURL();
 
             tryCheckIsFile(uri);
@@ -105,14 +105,12 @@ public class FileDownloader implements Callable<StatusEnum> {
         return StatusEnum.Success;
     }
 
-    private URI parseUri(String urlString) {
-        URI uri;
+    private URI parseUrl(String urlString) {
         try {
-            uri = new URI(urlString);
+            return new URL(urlString).toURI();
         } catch (Exception e) {
-            uri = Paths.get(urlString).toUri();
+            return Paths.get(urlString).toUri();
         }
-        return uri;
     }
 
     private void tryCheckIsFile(URI uri) throws DownloadException {

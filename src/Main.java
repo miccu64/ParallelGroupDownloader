@@ -35,7 +35,7 @@ public class Main {
 
     private static void showHelp() {
         String newLine = "\n";
-        System.out.print("Available options (each one is optional):" +
+        System.out.println("Available options (each one is optional):" +
                 newLine +
                 "-help - shows help" +
                 newLine +
@@ -44,7 +44,7 @@ public class Main {
                 "The same portbase MUST be specified for both sender and receiver" +
                 newLine +
                 "-interface <name>" +
-                "- network interface used to send out the data. On unix systems default is eth0" +
+                "- network interface used to send out the data" +
                 newLine +
                 "-url <value>" +
                 "- URL to file which will be downloaded. Can be HTTP URL or file on hard drive. " +

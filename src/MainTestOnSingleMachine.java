@@ -7,9 +7,10 @@ import server.ServerLogic;
 
 public class MainTestOnSingleMachine {
     public static void main(String[] args) throws DownloadException, InterruptedException, ConfigurationException {
-        //String url = "file:/home/lubuntu/Desktop/file.file";
+        //String url = "/home/lubuntu/Desktop/file.file";
         //String url = "file:/D:/Studia/Magisterka/ParallelGroupDownloader.zip";
-        String url = "D:\\Programy\\VirtualBoxMachines\\xubuntu-22.04.3-desktop-amd64.iso";
+        //String url = "D:\\Programy\\VirtualBoxMachines\\xubuntu-22.04.3-desktop-amd64.iso";
+        String url = "https://cdimage.ubuntu.com/lubuntu/releases/24.04/release/lubuntu-24.04-desktop-amd64.iso";
         UdpcastConfiguration configurationClient = new UdpcastConfiguration(args);
         CommonLogic clientLogic = new ClientLogic(configurationClient);
         String[] serverArgs = new String[]{"-url", url};
