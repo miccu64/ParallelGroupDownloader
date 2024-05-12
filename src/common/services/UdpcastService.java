@@ -21,14 +21,14 @@ public abstract class UdpcastService {
     private Process process;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
-        URL resourceUrl;
+        String executablePath;
         if (isWindows) {
-            resourceUrl = getResource("/udpcast/exe/" + programName + ".exe");
+            URL resourceUrl = getResource("/udpcast/exe/" + programName + ".exe");
+            executablePath = getExecutable(resourceUrl, programName);
         } else {
-            resourceUrl = selectProperLinuxVersion(programName);
+            URL resourceUrl = selectProperLinuxVersion(programName);
+            executablePath = "./" + getExecutable(resourceUrl, programName);
         }
-
-        String executablePath = getExecutable(resourceUrl, programName);
 
         params.add(0, executablePath);
         params.add("--nokbd");

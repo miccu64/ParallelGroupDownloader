@@ -2,11 +2,18 @@ package common.models;
 
 import common.exceptions.ConfigurationException;
 
+import java.util.Arrays;
+
 public class UdpcastConfiguration {
+    private boolean isHelpInvoked = false;
     private int portbase = 9000;
     private int delayMinutes = 0;
     private String url;
     private String networkInterface;
+
+    public boolean isHelpInvoked() {
+        return isHelpInvoked;
+    }
 
     public int getPortbase() {
         return portbase;
@@ -25,6 +32,11 @@ public class UdpcastConfiguration {
     }
 
     public UdpcastConfiguration(String[] args) throws ConfigurationException {
+        if (Arrays.asList(args).contains("-help")) {
+            isHelpInvoked = true;
+            return;
+        }
+
         if (args.length % 2 != 0) {
             throw new ConfigurationException("One of given parameters does not have corresponding value.");
         }
