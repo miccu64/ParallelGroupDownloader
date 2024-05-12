@@ -50,5 +50,7 @@ public abstract class CommonLogic {
     protected void cleanup() {
         udpcastService.stopUdpcast();
         checksumService.shutdown();
+
+        FilePartUtils.removeFiles(processedFiles);
     }
 }
