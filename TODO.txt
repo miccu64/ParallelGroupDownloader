@@ -1,2 +1,3 @@
 - automatyczny dobór rozmiaru parta (ale tak, żeby testy nadal działały)
 - poprawić timeouty w udpcast (na początku długi, przy kolejnych partach na serwerze krótki)
+- interfejs - jeśli zły pobrany, to pokazać poprawne

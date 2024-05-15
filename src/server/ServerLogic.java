@@ -24,7 +24,7 @@ public class ServerLogic extends CommonLogic {
         super(new ServerUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsServer");
 
         delayInMinutes = configuration.getDelayMinutes();
-        fileDownloader = new FileDownloader(configuration.getUrl(), 500, downloadPath);
+        fileDownloader = new FileDownloader(configuration.getUrl(), 10, downloadPath);
     }
 
     public StatusEnum doWork() {
@@ -87,7 +87,7 @@ public class ServerLogic extends CommonLogic {
 
     private void delayIfRequested() {
         if (delayInMinutes > 0) {
-            System.out.println("Starting delay for seconds: " + delayInMinutes);
+            System.out.println("Starting delay for minutes: " + delayInMinutes);
             sleep(delayInMinutes * 60);
             System.out.println("Delay end.");
         }
