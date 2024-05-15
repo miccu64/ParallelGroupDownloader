@@ -89,7 +89,8 @@ public class FileDownloader implements Callable<StatusEnum> {
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
                     processedFiles.add(filePartPath);
-                    return handleDownloadError(e, "Cannot save to file: " + partFile);
+                    System.err.println("Cannot save to file: " + partFile + ". Error: " + e.getMessage());
+                    return StatusEnum.Error;
                 }
 
                 if (transferredCount > 0) {
@@ -99,7 +100,8 @@ public class FileDownloader implements Callable<StatusEnum> {
                 }
             } while (transferredCount == blockSizeInBytes);
         } catch (IOException e) {
-            return handleDownloadError(e, "Cannot open given URL. Download aborted");
+            System.err.println("Cannot open given URL. Download aborted. Error: " + e.getMessage());
+            return StatusEnum.Error;
         }
 
         return StatusEnum.Success;
@@ -123,13 +125,6 @@ public class FileDownloader implements Callable<StatusEnum> {
                 throw new DownloadException("Given path does not point to file.");
             }
         }
-    }
-
-    private StatusEnum handleDownloadError(Exception e, String message) {
-        System.out.println(message);
-        e.printStackTrace(System.out);
-
-        return StatusEnum.Error;
     }
 
     private String getFileName(URI uri) {

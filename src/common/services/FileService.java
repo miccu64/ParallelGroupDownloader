@@ -22,14 +22,14 @@ import static java.nio.file.StandardOpenOption.*;
 public class FileService {
     private final ConcurrentLinkedQueue<Future<String>> checksumFutures = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<Future<Boolean>> joinResultFutures = new ConcurrentLinkedQueue<>();
-    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Path finalFilePath;
 
     public FileService(Path finalFilePath) throws DownloadException {
         this.finalFilePath = finalFilePath;
 
         FilePartUtils.removeFile(finalFilePath);
-        if (Files.exists(finalFilePath)){
+        if (Files.exists(finalFilePath)) {
             throw new DownloadException("Cannot remove file: " + finalFilePath);
         }
 
@@ -86,8 +86,10 @@ public class FileService {
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
             try (InputStream inputStream = Files.newInputStream(filePath);
                  DigestInputStream digestInputStream = new DigestInputStream(inputStream, messageDigest)) {
-                byte[] buffer = new byte[50000000];
-                while (digestInputStream.read(buffer) != -1) {
+                byte[] buffer = new byte[32768];
+                int readCount = 0;
+                while (readCount != -1) {
+                    readCount = digestInputStream.read(buffer);
                 }
             }
             byte[] checksum = messageDigest.digest();
@@ -101,7 +103,7 @@ public class FileService {
         }
     }
 
-    private boolean mergeWithMainFileAndRemovePart(Path filePart) throws DownloadException {
+    private boolean mergeWithMainFileAndRemovePart(Path filePart) {
         try (FileChannel out = FileChannel.open(finalFilePath, WRITE, APPEND)) {
             System.out.println("Joining file part: " + filePart.getFileName());
 
@@ -113,9 +115,9 @@ public class FileService {
             }
             removeFile(filePart);
         } catch (IOException e) {
-            throw new DownloadException(e, "Error while joining parts of file.");
+            System.err.println("Error while joining parts of file. Error: " + e.getMessage());
+            return false;
         }
-
         return true;
     }
 }

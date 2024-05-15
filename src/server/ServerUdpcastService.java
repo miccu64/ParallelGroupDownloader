@@ -14,7 +14,7 @@ public class ServerUdpcastService extends UdpcastService {
                 new ArrayList<>(Arrays.asList(
                         "--min-wait", "3",
                         "--retries-until-drop", "30",
-                        "--start-timeout", String.valueOf(30 * 60)
+                        "--start-timeout", "5"
                 )));
     }
 
@@ -22,10 +22,10 @@ public class ServerUdpcastService extends UdpcastService {
     public void processFile(Path filePath) throws DownloadException {
         super.processFile(filePath);
 
-        sleepOneSecond();
+        waitForReceiversFinalize();
     }
 
-    private void sleepOneSecond() {
+    private void waitForReceiversFinalize() {
         // udp-receiver has by default 500 delay in closing (--exit-wait parameter)
         // receiver waits 500ms after receiving the final REQACK in order to guard against loss of the final ACK
         try {
