@@ -43,8 +43,6 @@ public class ClientLogic extends CommonLogic {
                 if (endInfoFile == null) {
                     fileService.addFileToProcess(filePart);
                 }
-
-                // TODO: avoid infinite loop
             }
 
             compareChecksums(endInfoFile.getChecksums(), fileService.waitForChecksums());

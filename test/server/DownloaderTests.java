@@ -32,7 +32,7 @@ public class DownloaderTests {
         Assertions.assertEquals(StatusEnum.Success, result);
 
         // join files
-        for (Path p: fileDownloader.getProcessedFiles()){
+        for (Path p : fileDownloader.getProcessedFiles()) {
             fileService.addFileToProcess(p);
         }
         fileService.waitForFilesJoin();
