@@ -41,7 +41,7 @@ public class Main {
                 newLine +
                 "-portbase <number>" +
                 "- default ports to use. Two ports are used: portbase and portbase+1. Default is 9000. " +
-                "The same portbase MUST be specified for both sender and receiver" +
+                "The same portbase MUST be specified for both sender and receiver. Ports from range <1024-65535> are allowed" +
                 newLine +
                 "-interface <name>" +
                 "- network interface used to send out the data" +
@@ -51,6 +51,9 @@ public class Main {
                 "Path should be absolute. This options makes app working in server mode and it will send file to other computers" +
                 newLine +
                 "-delay <minutes>" +
-                "- server starting delay in minutes. Applicable only to server (when URL is given)");
+                "- server starting delay in minutes. Applicable only to server (when URL is given)" +
+                newLine +
+                "-directory <value> " +
+                "- directory to which will be saved downloaded files");
     }
 }

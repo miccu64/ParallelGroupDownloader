@@ -1,11 +1,11 @@
 package server;
 
 import common.CommonLogic;
-import common.models.StatusEnum;
-import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
+import common.models.StatusEnum;
+import common.models.UdpcastConfiguration;
 import common.services.FileService;
 import common.utils.FilePartUtils;
 
@@ -21,7 +21,7 @@ public class ServerLogic extends CommonLogic {
     private int processedPartsCount = 0;
 
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
-        super(new ServerUdpcastService(configuration), Paths.get("downloadsServer"));
+        super(new ServerUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsServer");
 
         delayInMinutes = configuration.getDelayMinutes();
         fileDownloader = new FileDownloader(configuration.getUrl(), 500, downloadPath);

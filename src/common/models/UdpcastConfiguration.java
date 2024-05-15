@@ -10,6 +10,7 @@ public class UdpcastConfiguration {
     private int delayMinutes = 0;
     private String url;
     private String networkInterface;
+    private String directory;
 
     public boolean isHelpInvoked() {
         return isHelpInvoked;
@@ -31,6 +32,10 @@ public class UdpcastConfiguration {
         return networkInterface;
     }
 
+    public String getDirectory() {
+        return directory;
+    }
+
     public UdpcastConfiguration(String[] args) throws ConfigurationException {
         if (Arrays.asList(args).contains("-help")) {
             isHelpInvoked = true;
@@ -44,6 +49,9 @@ public class UdpcastConfiguration {
         for (int i = 0; i < args.length; i += 2) {
             String key = getKey(args[i]);
             String value = getValue(args[i + 1]);
+            if (value.isEmpty()){
+                throw new ConfigurationException("Empty value was given.");
+            }
 
             try {
                 switch (key) {
@@ -64,6 +72,9 @@ public class UdpcastConfiguration {
                         break;
                     case "url":
                         url = value;
+                        break;
+                    case "directory":
+                        directory = value;
                         break;
                     default:
                         throw new ConfigurationException(key, value);

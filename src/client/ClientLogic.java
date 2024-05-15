@@ -1,12 +1,12 @@
 package client;
 
 import common.CommonLogic;
-import common.models.StatusEnum;
-import common.models.UdpcastConfiguration;
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
 import common.infos.EndInfoFile;
 import common.infos.StartInfoFile;
+import common.models.StatusEnum;
+import common.models.UdpcastConfiguration;
 import common.services.FileService;
 import common.utils.FilePartUtils;
 
@@ -19,7 +19,7 @@ import java.util.List;
 
 public class ClientLogic extends CommonLogic {
     public ClientLogic(UdpcastConfiguration configuration) throws DownloadException {
-        super(new ClientUdpcastService(configuration), Paths.get("downloadsClient"));
+        super(new ClientUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsClient");
     }
 
     public StatusEnum doWork() {

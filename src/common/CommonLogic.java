@@ -23,13 +23,15 @@ public abstract class CommonLogic {
 
     protected FileService fileService;
 
-    protected CommonLogic(UdpcastService udpcastService, Path downloadPath) throws DownloadException {
+    protected CommonLogic(UdpcastService udpcastService, String downloadPath) throws DownloadException {
         this.udpcastService = udpcastService;
-        this.downloadPath = downloadPath.toString();
+        this.downloadPath = downloadPath;
+
+        Path path = Paths.get(downloadPath);
         try {
-            Files.createDirectories(downloadPath);
+            Files.createDirectories(path);
         } catch (IOException e) {
-            throw new DownloadException(e, "Could not create download directories");
+            throw new DownloadException(e, "Could not create download directories.");
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));

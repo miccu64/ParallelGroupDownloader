@@ -126,5 +126,24 @@ public class UdpcastConfigurationTests {
         Assertions.assertThrowsExactly(ConfigurationException.class, () -> new UdpcastConfiguration(args));
     }
 
+    @Test
+    public void shouldAcceptDirectory() {
+        // Arrange
+        String[] args = new String[]{"-directory", "test"};
 
+        // Act / Assert
+        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
+    }
+
+    @Test
+    public void shouldDetectHelp() throws ConfigurationException {
+        // Arrange
+        String[] args = new String[]{"-help"};
+
+        // Act
+        UdpcastConfiguration udpcastConfiguration = new UdpcastConfiguration(args);
+
+        // Assert
+        Assertions.assertTrue(udpcastConfiguration.isHelpInvoked());
+    }
 }

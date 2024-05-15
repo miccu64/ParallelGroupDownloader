@@ -12,7 +12,7 @@ public class ClientUdpcastService extends UdpcastService {
         super("udp-receiver", configuration,
                 new ArrayList<>(Arrays.asList(
                         "--receive-timeout", "30",
-                        "--start-timeout", String.valueOf(30 * 60)
+                        "--start-timeout", "1800"
                 )));
     }
 }
