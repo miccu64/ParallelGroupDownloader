@@ -2,13 +2,16 @@ package common.models;
 
 import common.exceptions.ConfigurationException;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class UdpcastConfiguration {
     private boolean isHelpInvoked = false;
     private int portbase = 9000;
     private String networkInterface;
-    private String directory;
+    private String directory = "downloads";
     private String fileName;
 
     private String url;
@@ -77,10 +80,14 @@ public class UdpcastConfiguration {
                         networkInterface = value;
                         break;
                     case "directory":
-                        directory = value;
+                        this.directory = String.valueOf(parsePath(value));
                         break;
                     case "filename":
-                        fileName = value;
+                        Path path = parsePath(value);
+                        if (path.getParent() != null || path.getFileName() == null) {
+                            throw new ConfigurationException("Wrong file name.");
+                        }
+                        this.fileName = String.valueOf(path);
                         break;
 
                     case "url":
@@ -125,5 +132,13 @@ public class UdpcastConfiguration {
             throw new ConfigurationException("Empty value was given.");
         }
         return value;
+    }
+
+    private Path parsePath(String value) throws ConfigurationException {
+        try {
+            return Paths.get(value);
+        } catch (InvalidPathException e){
+            throw new ConfigurationException("Invalid path of filename or directory.");
+        }
     }
 }

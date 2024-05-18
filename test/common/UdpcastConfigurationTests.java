@@ -1,7 +1,6 @@
 package common;
 
 import common.exceptions.ConfigurationException;
-import common.exceptions.DownloadException;
 import common.models.UdpcastConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -122,24 +121,6 @@ public class UdpcastConfigurationTests {
     }
 
     @Test
-    public void shouldAcceptDirectory() {
-        // Arrange
-        String[] args = new String[]{"-directory", "test"};
-
-        // Act / Assert
-        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
-    }
-
-    @Test
-    public void shouldAcceptFileName() {
-        // Arrange
-        String[] args = new String[]{"-filename", "test"};
-
-        // Act / Assert
-        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
-    }
-
-    @Test
     public void shouldAcceptBlockSizeWhenUrlIsGiven() {
         // Arrange
         String[] args = new String[]{"-url", "test", "-blocksize", "1"};
@@ -159,7 +140,7 @@ public class UdpcastConfigurationTests {
     }
 
     @Test
-    public void shouldAcceptBlockSizeWhenUrlIsNotGiven() {
+    public void shouldThrowOnBlockSizeWhenUrlIsNotGiven() {
         // Arrange
         String[] args = new String[]{"-blocksize", "1"};
 
@@ -177,5 +158,44 @@ public class UdpcastConfigurationTests {
 
         // Assert
         Assertions.assertTrue(udpcastConfiguration.isHelpInvoked());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "test", "/test", "/test/", "test/", "\\test", "\\test\\", "test\\", "test1/test2/test3"})
+    public void shouldAcceptDirectories(String path) {
+        // Arrange
+        String[] args = new String[]{"-directory", path};
+
+        // Act / Assert
+        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"file", "file.file"})
+    public void shouldAcceptFileNames(String name) {
+        // Arrange
+        String[] args = new String[]{"-filename", name};
+
+        // Act / Assert
+        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/file", "file/file"})
+    public void shouldThrowOnFileNamesBeingPaths(String path) {
+        // Arrange
+        String[] args = new String[]{"-filename", path};
+
+        // Act / Assert
+        Assertions.assertThrowsExactly(ConfigurationException.class, () -> new UdpcastConfiguration(args));
+    }
+
+    @Test
+    public void shouldAcceptFileName() {
+        // Arrange
+        String[] args = new String[]{"-filename", "test"};
+
+        // Act / Assert
+        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
     }
 }

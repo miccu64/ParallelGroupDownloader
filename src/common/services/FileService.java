@@ -29,10 +29,6 @@ public class FileService {
         this.finalFilePath = finalFilePath;
 
         FilePartUtils.removeFile(finalFilePath);
-        if (Files.exists(finalFilePath)) {
-            throw new DownloadException("Cannot remove file: " + finalFilePath);
-        }
-
         try {
             Files.createFile(finalFilePath);
         } catch (IOException e) {
@@ -57,6 +53,7 @@ public class FileService {
     }
 
     public void waitForFilesJoin() throws DownloadException {
+        System.out.println("Waiting for end of files joining...");
         waitForChecksums();
 
         for (Future<Boolean> future : joinResultFutures) {

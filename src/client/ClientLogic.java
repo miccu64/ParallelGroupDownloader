@@ -21,7 +21,7 @@ public class ClientLogic extends CommonLogic {
     private String fileName;
 
     public ClientLogic(UdpcastConfiguration configuration) throws DownloadException {
-        super(new ClientUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsClient");
+        super(new ClientUdpcastService(configuration), configuration.getDirectory());
 
         this.fileName = configuration.getFileName();
     }
@@ -36,7 +36,7 @@ public class ClientLogic extends CommonLogic {
             if (this.fileName == null) {
                 fileName = fileNameFromServer;
             }
-            finalFilePath = Paths.get(this.downloadPath, fileName);
+            finalFilePath = Paths.get(this.downloadDirectory, fileName);
 
             fileService = new FileService(finalFilePath);
 
@@ -70,7 +70,7 @@ public class ClientLogic extends CommonLogic {
     }
 
     private String processStartFile() throws DownloadException {
-        Path startFilePath = Paths.get(downloadPath, "startInfo.txt");
+        Path startFilePath = Paths.get(downloadDirectory, "startInfo.txt");
         try {
             udpcastService.processFile(startFilePath);
             StartInfoFile startInfoFile = new StartInfoFile(startFilePath);
@@ -92,7 +92,7 @@ public class ClientLogic extends CommonLogic {
     private EndInfoFile tryProcessEndFile(Path filePart) throws DownloadException {
         try {
             EndInfoFile endInfoFile = new EndInfoFile(filePart);
-            Path endFilePath = Paths.get(downloadPath, "endInfo.txt");
+            Path endFilePath = Paths.get(downloadDirectory, "endInfo.txt");
             try {
                 Files.move(filePart, endFilePath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
@@ -108,7 +108,7 @@ public class ClientLogic extends CommonLogic {
     }
 
     private Path generateFilePartPath(String fileName, int partCount) {
-        Path path = Paths.get(downloadPath, fileName + ".part" + partCount);
+        Path path = Paths.get(downloadDirectory, fileName + ".part" + partCount);
         path.toFile().deleteOnExit();
         return path;
     }

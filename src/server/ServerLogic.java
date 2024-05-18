@@ -21,15 +21,15 @@ public class ServerLogic extends CommonLogic {
     private int processedPartsCount = 0;
 
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
-        super(new ServerUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsServer");
+        super(new ServerUdpcastService(configuration), configuration.getDirectory());
 
         delayInMinutes = configuration.getDelayMinutes();
-        fileDownloader = new FileDownloader(configuration.getUrl(), downloadPath, configuration.getFileName(), configuration.getBlockSizeInMb());
+        fileDownloader = new FileDownloader(configuration.getUrl(), downloadDirectory, configuration.getFileName(), configuration.getBlockSizeInMb());
     }
 
     public StatusEnum doWork() {
         System.out.println("Acting as server.");
-        Path finalFilePath = Paths.get(this.downloadPath, fileDownloader.getFileName());
+        Path finalFilePath = Paths.get(this.downloadDirectory, fileDownloader.getFileName());
 
         StatusEnum result;
         try {
@@ -116,7 +116,7 @@ public class ServerLogic extends CommonLogic {
         int fileSizeInMB = fileDownloader.getFileSizeInMB();
         int blockSizeInMB = fileDownloader.getBlockSizeInMB();
 
-        StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB, blockSizeInMB);
+        StartInfoFile startInfoFile = new StartInfoFile(downloadDirectory, url, fileName, fileSizeInMB, blockSizeInMB);
         try {
             udpcastService.processFile(startInfoFile.filePath);
             return true;
@@ -129,7 +129,9 @@ public class ServerLogic extends CommonLogic {
 
     private Path tryGetUnprocessedFile() {
         try {
-            return fileDownloader.getProcessedFiles().get(processedPartsCount);
+            Path path = fileDownloader.getProcessedFiles().get(processedPartsCount);
+            processedPartsCount++;
+            return path;
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
@@ -138,8 +140,6 @@ public class ServerLogic extends CommonLogic {
     private void processFilePart(Path filePath) throws DownloadException {
         udpcastService.processFile(filePath);
         fileService.addFileToProcess(filePath);
-
-        processedPartsCount++;
     }
 
     private void checkFileDownloaderSuccess(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
@@ -163,7 +163,7 @@ public class ServerLogic extends CommonLogic {
     }
 
     private void processEndFile() throws DownloadException {
-        EndInfoFile endInfoFile = new EndInfoFile(downloadPath, fileService.waitForChecksums());
+        EndInfoFile endInfoFile = new EndInfoFile(downloadDirectory, fileService.waitForChecksums());
         try {
             udpcastService.processFile(endInfoFile.filePath);
         } finally {

@@ -13,24 +13,22 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class CommonLogic {
     protected final UdpcastService udpcastService;
-    protected final String downloadPath;
+    protected final String downloadDirectory;
 
     protected FileService fileService;
 
-    protected CommonLogic(UdpcastService udpcastService, String downloadPath) throws DownloadException {
+    protected CommonLogic(UdpcastService udpcastService, String downloadDirectory) throws DownloadException {
         this.udpcastService = udpcastService;
-        if (downloadPath == null) {
-            this.downloadPath = "";
+        if (downloadDirectory == null) {
+            this.downloadDirectory = "";
         } else {
-            this.downloadPath = downloadPath;
+            this.downloadDirectory = downloadDirectory;
         }
 
-        Path path = Paths.get(this.downloadPath);
+        Path path = Paths.get(this.downloadDirectory);
         try {
             Files.createDirectories(path);
         } catch (IOException e) {

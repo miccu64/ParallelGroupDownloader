@@ -5,6 +5,7 @@ test/docker/disconnectTest/files/
 test/files/
 /test/docker/files/
 /test/docker/redHat/udpcast/
+/downloads/
 
 ### IntelliJ IDEA ###
 out/
