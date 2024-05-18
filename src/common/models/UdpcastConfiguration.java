@@ -13,7 +13,7 @@ public class UdpcastConfiguration {
 
     private String url;
     private int delayMinutes = 0;
-    private int blockSizeInMb = 2000;
+    private int blockSizeInMb = 64;
 
     public boolean isHelpInvoked() {
         return isHelpInvoked;

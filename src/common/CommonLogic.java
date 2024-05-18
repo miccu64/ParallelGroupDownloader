@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class CommonLogic {
-    protected final List<Path> processedFiles = new ArrayList<>();
     protected final UdpcastService udpcastService;
     protected final String downloadPath;
 
@@ -25,9 +24,13 @@ public abstract class CommonLogic {
 
     protected CommonLogic(UdpcastService udpcastService, String downloadPath) throws DownloadException {
         this.udpcastService = udpcastService;
-        this.downloadPath = downloadPath;
+        if (downloadPath == null) {
+            this.downloadPath = "";
+        } else {
+            this.downloadPath = downloadPath;
+        }
 
-        Path path = Paths.get(downloadPath);
+        Path path = Paths.get(this.downloadPath);
         try {
             Files.createDirectories(path);
         } catch (IOException e) {
@@ -56,7 +59,5 @@ public abstract class CommonLogic {
         if (fileService != null) {
             fileService.shutdown();
         }
-
-        FilePartUtils.removeFiles(processedFiles);
     }
 }

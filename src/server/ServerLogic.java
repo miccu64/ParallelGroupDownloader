@@ -29,6 +29,7 @@ public class ServerLogic extends CommonLogic {
 
     public StatusEnum doWork() {
         System.out.println("Acting as server.");
+        Path finalFilePath = Paths.get(this.downloadPath, fileDownloader.getFileName());
 
         StatusEnum result;
         try {
@@ -38,24 +39,40 @@ public class ServerLogic extends CommonLogic {
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
 
             delayIfRequested();
+            fileService = new FileService(finalFilePath);
 
-            processStartFile();
-            fileService = new FileService(Paths.get(this.downloadPath, fileDownloader.getFileName()));
-
+            boolean processedStartFile;
             do {
-                Path fileToProcess = tryGetUnprocessedFile();
-                if (fileToProcess != null) {
-                    processFilePart(fileToProcess);
+                processedStartFile = processStartFile();
+                if (!processedStartFile) {
+                    System.out.println("Could not find any clients. Program will retry in next 1 minute if download will be still in progress.");
+                    sleep(60);
                 }
-            } while (!fileDownloaderFuture.isDone());
+            } while (!processedStartFile && !fileDownloaderFuture.isDone());
 
-            processRemainingParts(fileDownloaderFuture);
+            if (processedStartFile) {
+                do {
+                    Path fileToProcess = tryGetUnprocessedFile();
+                    if (fileToProcess != null) {
+                        processFilePart(fileToProcess);
+                    }
+                } while (!fileDownloaderFuture.isDone());
 
-            processEndFile();
+                processRemainingParts(fileDownloaderFuture);
+
+                processEndFile();
+            } else {
+                Path fileToProcess;
+                while ((fileToProcess = tryGetUnprocessedFile()) != null) {
+                    fileService.addFileToProcess(fileToProcess);
+                }
+            }
+
             fileService.waitForFilesJoin();
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
+            finalFilePath.toFile().deleteOnExit();
             result = StatusEnum.Error;
         } finally {
             cleanup();
@@ -93,7 +110,7 @@ public class ServerLogic extends CommonLogic {
         }
     }
 
-    private void processStartFile() throws DownloadException {
+    private boolean processStartFile() throws DownloadException {
         String url = fileDownloader.getUrl().toString();
         String fileName = fileDownloader.getFileName();
         int fileSizeInMB = fileDownloader.getFileSizeInMB();
@@ -102,6 +119,9 @@ public class ServerLogic extends CommonLogic {
         StartInfoFile startInfoFile = new StartInfoFile(downloadPath, url, fileName, fileSizeInMB, blockSizeInMB);
         try {
             udpcastService.processFile(startInfoFile.filePath);
+            return true;
+        } catch (DownloadException e) {
+            return false;
         } finally {
             FilePartUtils.removeFile(startInfoFile.filePath);
         }
@@ -116,8 +136,6 @@ public class ServerLogic extends CommonLogic {
     }
 
     private void processFilePart(Path filePath) throws DownloadException {
-        processedFiles.add(filePath);
-
         udpcastService.processFile(filePath);
         fileService.addFileToProcess(filePath);
 

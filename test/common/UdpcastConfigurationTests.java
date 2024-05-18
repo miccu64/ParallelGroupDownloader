@@ -1,6 +1,7 @@
 package common;
 
 import common.exceptions.ConfigurationException;
+import common.exceptions.DownloadException;
 import common.models.UdpcastConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -152,6 +153,15 @@ public class UdpcastConfigurationTests {
     public void shouldThrowOnImproperBlockSizes(int number) {
         // Arrange
         String[] args = new String[]{"-blocksize", String.valueOf(number)};
+
+        // Act / Assert
+        Assertions.assertThrowsExactly(ConfigurationException.class, () -> new UdpcastConfiguration(args));
+    }
+
+    @Test
+    public void shouldAcceptBlockSizeWhenUrlIsNotGiven() {
+        // Arrange
+        String[] args = new String[]{"-blocksize", "1"};
 
         // Act / Assert
         Assertions.assertThrowsExactly(ConfigurationException.class, () -> new UdpcastConfiguration(args));
