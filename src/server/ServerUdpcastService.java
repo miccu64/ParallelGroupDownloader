@@ -13,7 +13,6 @@ public class ServerUdpcastService extends UdpcastService {
         super("udp-sender", configuration,
                 new ArrayList<>(Arrays.asList(
                         "--min-wait", "3",
-                        "--retries-until-drop", "64",
                         "--start-timeout", "5"
                 )));
     }

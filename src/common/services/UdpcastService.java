@@ -91,7 +91,6 @@ public abstract class UdpcastService {
     }
 
     private String selectProperLinuxVersion(String programName) throws DownloadException {
-        StringBuilder errors = new StringBuilder();
         List<String> versions = Arrays.asList("deb-x64", "rpm-x64", "deb-x86", "rpm-x86");
         for (String version : versions) {
             try {
@@ -101,12 +100,12 @@ public abstract class UdpcastService {
                 if (process.exitValue() == 0) {
                     return executableUrl;
                 }
-            } catch (IOException | InterruptedException | IllegalThreadStateException e) {
-                errors.append(e.getMessage());
+            } catch (IOException | InterruptedException | IllegalThreadStateException ignored) {
             }
         }
 
-        throw new DownloadException("Cannot run udpcast library. Probably not supported OS. Inner messages: " + errors);
+        throw new DownloadException("Cannot run udpcast library. Missing GLIBC library (required min version 2.34) " +
+                "or not supported OS. Try install via 'sudo apt install libc6'.");
     }
 
     private String extractExecutable(String resourcePath, String programName) throws DownloadException {
