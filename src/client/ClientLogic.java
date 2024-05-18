@@ -18,8 +18,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class ClientLogic extends CommonLogic {
+    private String fileName;
+
     public ClientLogic(UdpcastConfiguration configuration) throws DownloadException {
         super(new ClientUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsClient");
+
+        this.fileName = configuration.getFileName();
     }
 
     public StatusEnum doWork() {
@@ -27,7 +31,10 @@ public class ClientLogic extends CommonLogic {
 
         StatusEnum result;
         try {
-            String fileName = processStartFile();
+            String fileNameFromServer = processStartFile();
+            if (this.fileName == null) {
+                fileName = fileNameFromServer;
+            }
 
             fileService = new FileService(Paths.get(this.downloadPath, fileName));
 

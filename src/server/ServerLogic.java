@@ -24,7 +24,7 @@ public class ServerLogic extends CommonLogic {
         super(new ServerUdpcastService(configuration), configuration.getDirectory() != null ? configuration.getDirectory() : "downloadsServer");
 
         delayInMinutes = configuration.getDelayMinutes();
-        fileDownloader = new FileDownloader(configuration.getUrl(), 10, downloadPath);
+        fileDownloader = new FileDownloader(configuration.getUrl(), downloadPath, configuration.getFileName(), configuration.getBlockSizeInMb());
     }
 
     public StatusEnum doWork() {

@@ -7,10 +7,13 @@ import java.util.Arrays;
 public class UdpcastConfiguration {
     private boolean isHelpInvoked = false;
     private int portbase = 9000;
-    private int delayMinutes = 0;
-    private String url;
     private String networkInterface;
     private String directory;
+    private String fileName;
+
+    private String url;
+    private int delayMinutes = 0;
+    private int blockSizeInMb = 2000;
 
     public boolean isHelpInvoked() {
         return isHelpInvoked;
@@ -20,20 +23,28 @@ public class UdpcastConfiguration {
         return portbase;
     }
 
-    public int getDelayMinutes() {
-        return delayMinutes;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
     public String getNetworkInterface() {
         return networkInterface;
     }
 
     public String getDirectory() {
         return directory;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public int getDelayMinutes() {
+        return delayMinutes;
+    }
+
+    public int getBlockSizeInMb() {
+        return blockSizeInMb;
     }
 
     public UdpcastConfiguration(String[] args) throws ConfigurationException {
@@ -46,17 +57,18 @@ public class UdpcastConfiguration {
             throw new ConfigurationException("One of given parameters does not have corresponding value.");
         }
 
+        boolean serverOptionGiven = false;
         for (int i = 0; i < args.length; i += 2) {
             String key = getKey(args[i]);
             String value = getValue(args[i + 1]);
-            if (value.isEmpty()){
+            if (value.isEmpty()) {
                 throw new ConfigurationException("Empty value was given.");
             }
 
             try {
                 switch (key) {
                     case "portbase":
-                        portbase = Integer.parseUnsignedInt(value);
+                        portbase = Integer.parseInt(value);
                         if (portbase < 1024 || portbase > 65535) {
                             throw new ConfigurationException("Only ports 1024-65535 are allowed.");
                         }
@@ -64,17 +76,29 @@ public class UdpcastConfiguration {
                     case "interface":
                         networkInterface = value;
                         break;
+                    case "directory":
+                        directory = value;
+                        break;
+                    case "filename":
+                        fileName = value;
+                        break;
+
+                    case "url":
+                        url = value;
+                        break;
                     case "delay":
+                        serverOptionGiven = true;
                         delayMinutes = Integer.parseUnsignedInt(value);
                         if (delayMinutes >= 30) {
                             throw new ConfigurationException("Delay must be shorter than 30 minutes.");
                         }
                         break;
-                    case "url":
-                        url = value;
-                        break;
-                    case "directory":
-                        directory = value;
+                    case "blocksize":
+                        serverOptionGiven = true;
+                        blockSizeInMb = Integer.parseInt(value);
+                        if (blockSizeInMb <= 0) {
+                            throw new ConfigurationException("Block size must be at least equal 1MB.");
+                        }
                         break;
                     default:
                         throw new ConfigurationException(key, value);
@@ -84,8 +108,8 @@ public class UdpcastConfiguration {
             }
         }
 
-        if (url == null && delayMinutes > 0) {
-            throw new ConfigurationException("Delay option is applicable only when URL is given.");
+        if (url == null && serverOptionGiven) {
+            throw new ConfigurationException("Delay and blocksize options are applicable only when URL is given (when acting as a server).");
         }
     }
 

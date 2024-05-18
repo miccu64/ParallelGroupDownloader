@@ -47,9 +47,12 @@ public class FileDownloader implements Callable<StatusEnum> {
         return FilePartUtils.bytesToMegabytes(blockSizeInBytes);
     }
 
-    public FileDownloader(String urlString, int blockSizeInMB, String downloadPath) throws DownloadException {
+    public FileDownloader(String urlString, String downloadPath, String fileName, int blockSizeInMB) throws DownloadException {
         if (urlString == null || urlString.isEmpty()) {
             throw new DownloadException("Empty url.");
+        }
+        if (blockSizeInMB < 1) {
+            throw new DownloadException("Block size must be at least equal 1MB.");
         }
 
         try {
@@ -58,7 +61,10 @@ public class FileDownloader implements Callable<StatusEnum> {
 
             tryCheckIsFile(uri);
 
-            fileName = getFileName(uri);
+            if (fileName == null) {
+                fileName = getFileName(uri);
+            }
+            this.fileName = fileName;
             filePath = Paths.get(downloadPath, fileName);
         } catch (IllegalArgumentException | MalformedURLException e) {
             throw new DownloadException(e, "Malformed URL.");

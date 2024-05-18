@@ -209,7 +209,7 @@ public class DownloaderTests {
         String malformedUrl = "http://not-existing-url-32176573546.pl/file.txt";
 
         // Act
-        StatusEnum status = new FileDownloader(malformedUrl, 1, null).call();
+        StatusEnum status = new FileDownloader(malformedUrl, null, null, 1).call();
 
         // Assert
         Assertions.assertEquals(StatusEnum.Error, status);
@@ -217,20 +217,20 @@ public class DownloaderTests {
 
     @Test
     public void shouldThrowWhenUrlIsEmpty() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", 1, null));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("", null, null, 1));
     }
 
     @Test
     public void shouldThrowWhenBlockSizeEqualsZero() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", 0, null));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", null, null, 0));
     }
 
     @Test
     public void shouldThrowWhenBlockSizeIsLowerThanZero() {
-        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", -1, null));
+        Assertions.assertThrowsExactly(DownloadException.class, () -> new FileDownloader("test", null, null, -1));
     }
 
     private FileDownloader createFileDownloader(String url, int blockSizeInMB) throws DownloadException, IOException {
-        return new FileDownloader(url, blockSizeInMB, Files.createTempDirectory(null).toString());
+        return new FileDownloader(url, Files.createTempDirectory(null).toString(), null, blockSizeInMB);
     }
 }
