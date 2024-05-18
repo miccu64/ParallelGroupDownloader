@@ -117,10 +117,16 @@ public class ServerLogic extends CommonLogic {
         int blockSizeInMB = fileDownloader.getBlockSizeInMB();
 
         StartInfoFile startInfoFile = new StartInfoFile(downloadDirectory, url, fileName, fileSizeInMB, blockSizeInMB);
+        long startTime = System.nanoTime();
         try {
             udpcastService.processFile(startInfoFile.filePath);
             return true;
         } catch (DownloadException e) {
+            long executionTime = System.nanoTime() - startTime;
+            boolean isError = TimeUnit.NANOSECONDS.toMillis(executionTime) < 1000;
+            if (isError) {
+                throw e;
+            }
             return false;
         } finally {
             FilePartUtils.removeFile(startInfoFile.filePath);

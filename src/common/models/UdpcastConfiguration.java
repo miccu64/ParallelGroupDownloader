@@ -72,8 +72,8 @@ public class UdpcastConfiguration {
                 switch (key) {
                     case "portbase":
                         portbase = Integer.parseInt(value);
-                        if (portbase < 1024 || portbase > 65535) {
-                            throw new ConfigurationException("Only ports 1024-65535 are allowed.");
+                        if (portbase < 1024 || portbase > 65534) {
+                            throw new ConfigurationException("Only portbase from range <1024-65534> is allowed.");
                         }
                         break;
                     case "interface":

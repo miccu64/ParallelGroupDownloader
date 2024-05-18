@@ -36,7 +36,7 @@ public class UdpcastConfigurationTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"-1", "0", "1", "1023", "65536", "a", "", "2222.2"})
+    @ValueSource(strings = {"-1", "0", "1", "1023", "65535", "a", "", "2222.2"})
     public void shouldThrowForImproperPortbases(String port) {
         // Arrange
         String[] args = new String[]{"-portbase", port};
@@ -46,7 +46,7 @@ public class UdpcastConfigurationTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1024", "9000", "65535"})
+    @ValueSource(strings = {"1024", "9000", "65534"})
     public void shouldWorkForProperPortbases(String port) {
         // Arrange
         String[] args = new String[]{"-portbase", port};

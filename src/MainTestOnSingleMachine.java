@@ -20,7 +20,7 @@ public class MainTestOnSingleMachine {
         String url = "D:/Studia/Magisterka/ParallelGroupDownloader.zip";
         //String url = "D:\\Programy\\VirtualBoxMachines\\xubuntu-22.04.3-desktop-amd64.iso";
         //String url = "https://cdimage.ubuntu.com/lubuntu/releases/24.04/release/lubuntu-24.04-desktop-amd64.iso";
-        String[] serverArgs = new String[]{"-interface","e", "-url", url, "-directory", "./", "-filename", "downloadsServer"};
+        String[] serverArgs = new String[]{"-url", url, "-directory", "./", "-filename", "downloadsServer"};
         UdpcastConfiguration configurationServer = new UdpcastConfiguration(serverArgs);
         CommonLogic serverLogic = new ServerLogic(configurationServer);
 
