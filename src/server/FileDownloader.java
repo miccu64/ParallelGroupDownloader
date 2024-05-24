@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileDownloader implements Callable<StatusEnum> {
     private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
-    private final AtomicInteger udpcastProcessedParts = new AtomicInteger(0);
+    private final AtomicInteger udpcastProcessedParts = new AtomicInteger(-1);
     private final long blockSizeInBytes;
     private final int fileSizeInMB;
     private final String fileName;
@@ -183,7 +183,7 @@ public class FileDownloader implements Callable<StatusEnum> {
     }
 
     private void waitForUdpcastProgress(int blockNumber) {
-        while (blockNumber - udpcastProcessedParts.get() >= 2) {
+        while (udpcastProcessedParts.get() != -1 && (blockNumber - udpcastProcessedParts.get() >= 2)) {
             VariousUtils.sleep(1);
         }
     }

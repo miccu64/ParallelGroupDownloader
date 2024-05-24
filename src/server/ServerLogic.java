@@ -30,6 +30,8 @@ public class ServerLogic extends CommonLogic {
 
     public StatusEnum doWork() {
         System.out.println("Acting as server.");
+        fileDownloader.incrementUdpcastProcessedParts();
+
         Path finalFileTempPath = Paths.get(this.downloadDirectory, fileDownloader.getFileName() + ".server");
         finalFileTempPath.toFile().deleteOnExit();
 
