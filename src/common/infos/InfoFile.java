@@ -2,6 +2,7 @@ package common.infos;
 
 import common.exceptions.DownloadException;
 import common.exceptions.InfoFileException;
+import common.utils.FilePartUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +18,8 @@ public abstract class InfoFile {
 
     protected void saveToFile(Path filePath) throws DownloadException {
         try {
+            FilePartUtils.markToDeleteOnExit(filePath);
             Files.write(filePath, toString().getBytes());
-            filePath.toFile().deleteOnExit();
         } catch (IOException e) {
             throw new DownloadException(e, "Could not save file: " + filePath);
         }

@@ -8,11 +8,7 @@ import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.zip.Adler32;
@@ -80,6 +76,7 @@ public class FileService {
     }
 
     private String fileChecksum(Path filePath) throws DownloadException {
+        System.out.println("Checksum start: " + filePath);
         Adler32 adler = new Adler32();
         try (InputStream inputStream = Files.newInputStream(filePath)) {
             byte[] buffer = new byte[1024 * 8];
@@ -89,7 +86,7 @@ public class FileService {
         } catch (IOException e) {
             throw new DownloadException(e, "Could not create file checksum.");
         }
-
+        System.out.println("Checksum enddddd: " + filePath);
         joinResultFutures.add(executorService.submit(() -> mergeWithMainFileAndRemovePart(filePath)));
 
         return String.valueOf(adler.getValue());

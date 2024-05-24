@@ -40,7 +40,7 @@ public class FilePartUtils {
             }
         }
 
-        path.toFile().deleteOnExit();
+        markToDeleteOnExit(path);
         return path.toAbsolutePath();
     }
 
@@ -50,6 +50,13 @@ public class FilePartUtils {
             return store.getUsableSpace() > (FilePartUtils.megabytesToBytes(expectedSizeInMB));
         } catch (IOException ignored) {
             return false;
+        }
+    }
+
+    public static void markToDeleteOnExit(Path filePath) {
+        try {
+            filePath.toFile().deleteOnExit();
+        } catch (Exception ignored) {
         }
     }
 }

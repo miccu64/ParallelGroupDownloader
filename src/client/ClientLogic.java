@@ -33,7 +33,7 @@ public class ClientLogic extends CommonLogic {
                 fileName = startInfoFile.fileName;
             }
             Path finalFileTempPath = Paths.get(this.downloadDirectory, fileName + ".client");
-            finalFileTempPath.toFile().deleteOnExit();
+            FilePartUtils.markToDeleteOnExit(finalFileTempPath);
 
             fileService = new FileService(finalFileTempPath);
 

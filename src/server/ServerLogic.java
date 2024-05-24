@@ -33,7 +33,7 @@ public class ServerLogic extends CommonLogic {
         fileDownloader.incrementUdpcastProcessedParts();
 
         Path finalFileTempPath = Paths.get(this.downloadDirectory, fileDownloader.getFileName() + ".server");
-        finalFileTempPath.toFile().deleteOnExit();
+        FilePartUtils.markToDeleteOnExit(finalFileTempPath);
 
         StatusEnum result;
         try {

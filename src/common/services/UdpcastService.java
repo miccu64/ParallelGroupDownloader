@@ -37,11 +37,11 @@ public abstract class UdpcastService {
     }
 
     public void processFile(Path filePath) throws DownloadException {
+        FilePartUtils.markToDeleteOnExit(filePath);
+
         List<String> params = new ArrayList<>(runParams);
         params.add("--file");
         params.add(filePath.toAbsolutePath().toString());
-
-        filePath.toFile().deleteOnExit();
 
         ProcessBuilder processBuilder = new ProcessBuilder(params).redirectErrorStream(true);
         try {
