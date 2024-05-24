@@ -107,7 +107,8 @@ public class FileService {
             }
             removeFile(filePart);
         } catch (IOException e) {
-            System.err.println("Error while joining parts of file. Error: " + e.getMessage());
+            String error = e.getMessage() != null ? " Error: " + e.getMessage() : "";
+            System.err.println("Error while joining parts of file." + error);
             return false;
         }
         return true;

@@ -14,7 +14,7 @@ public class ServerUdpcastService extends UdpcastService {
                 new ArrayList<>(Arrays.asList(
                         "--min-wait", "2",
                         "--start-timeout", "5",
-                        "--full-duplex", ""
+                        "--full-duplex"
                 )));
     }
 

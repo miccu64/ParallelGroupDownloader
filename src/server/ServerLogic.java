@@ -29,7 +29,8 @@ public class ServerLogic extends CommonLogic {
 
     public StatusEnum doWork() {
         System.out.println("Acting as server.");
-        Path finalFilePath = Paths.get(this.downloadDirectory, fileDownloader.getFileName());
+        Path finalFileTempPath = Paths.get(this.downloadDirectory, fileDownloader.getFileName() + ".server");
+        finalFileTempPath.toFile().deleteOnExit();
 
         StatusEnum result;
         try {
@@ -39,7 +40,7 @@ public class ServerLogic extends CommonLogic {
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
 
             delayIfRequested();
-            fileService = new FileService(finalFilePath);
+            fileService = new FileService(finalFileTempPath);
 
             boolean processedStartFile;
             do {
@@ -69,10 +70,10 @@ public class ServerLogic extends CommonLogic {
             }
 
             fileService.waitForFilesJoin();
+            renameFile(finalFileTempPath, fileDownloader.getFileName());
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
-            finalFilePath.toFile().deleteOnExit();
             result = StatusEnum.Error;
         } finally {
             cleanup();

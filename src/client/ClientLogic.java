@@ -29,16 +29,16 @@ public class ClientLogic extends CommonLogic {
     public StatusEnum doWork() {
         System.out.println("Acting as client. Waiting for server...");
 
-        Path finalFilePath = null;
         StatusEnum result;
         try {
             String fileNameFromServer = processStartFile();
             if (this.fileName == null) {
                 fileName = fileNameFromServer;
             }
-            finalFilePath = Paths.get(this.downloadDirectory, fileName);
+            Path finalFileTempPath = Paths.get(this.downloadDirectory, fileName + ".client");
+            finalFileTempPath.toFile().deleteOnExit();
 
-            fileService = new FileService(finalFilePath);
+            fileService = new FileService(finalFileTempPath);
 
             EndInfoFile endInfoFile = null;
             int partCount = 0;
@@ -55,12 +55,10 @@ public class ClientLogic extends CommonLogic {
 
             compareChecksums(endInfoFile.getChecksums(), fileService.waitForChecksums());
             fileService.waitForFilesJoin();
+            renameFile(finalFileTempPath, fileName);
 
             result = StatusEnum.Success;
         } catch (DownloadException e) {
-            if (finalFilePath != null) {
-                finalFilePath.toFile().deleteOnExit();
-            }
             result = StatusEnum.Error;
         } finally {
             cleanup();

@@ -58,4 +58,21 @@ public abstract class CommonLogic {
             fileService.shutdown();
         }
     }
+
+    protected void renameFile(Path filePath, String newName) {
+        Path parent = filePath.getParent();
+        Path newFilePath;
+        boolean result;
+        do {
+            if (parent == null) {
+                newFilePath = Paths.get(newName);
+            } else {
+                newFilePath = Paths.get(parent.toString(), newName);
+            }
+            FilePartUtils.removeFile(newFilePath);
+
+            result = filePath.toFile().renameTo(newFilePath.toFile());
+            newName = "1" + newName;
+        } while (!result);
+    }
 }
