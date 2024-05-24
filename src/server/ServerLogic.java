@@ -34,7 +34,7 @@ public class ServerLogic extends CommonLogic {
 
         StatusEnum result;
         try {
-            checkFreeSpace(fileDownloader.getFileSizeInMB(), fileDownloader.getBlockSizeInMB());
+            checkFreeSpace(this.downloadDirectory, fileDownloader.getFileSizeInMB(), fileDownloader.getBlockSizeInMB());
 
             Future<StatusEnum> fileDownloaderFuture = executorService.submit(fileDownloader);
             checkDownloadIsProperlyStarted(fileDownloaderFuture);

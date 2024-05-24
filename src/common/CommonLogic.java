@@ -40,14 +40,14 @@ public abstract class CommonLogic {
 
     public abstract StatusEnum doWork();
 
-    protected void checkFreeSpace(int summarySizeInMB, int partSizeInMB) throws DownloadException {
+    protected void checkFreeSpace(String path, int summarySizeInMB, int partSizeInMB) throws DownloadException {
         try {
-            URI location = CommonLogic.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-            FileStore store = Files.getFileStore(Paths.get(location));
+            FileStore store = Files.getFileStore(Paths.get(path));
             if (store.getUsableSpace() <= (FilePartUtils.megabytesToBytes(summarySizeInMB + partSizeInMB))) {
                 throw new DownloadException("Not enough free space.");
             }
-        } catch (IOException | URISyntaxException ignored) {
+        } catch (IOException ignored) {
+            System.err.println("Could not check free space.");
         }
     }
 

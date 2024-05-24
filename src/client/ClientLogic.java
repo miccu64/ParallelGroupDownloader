@@ -10,11 +10,8 @@ import common.models.UdpcastConfiguration;
 import common.services.FileService;
 import common.utils.FilePartUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class ClientLogic extends CommonLogic {
@@ -78,7 +75,7 @@ public class ClientLogic extends CommonLogic {
                 System.out.println("Not known file size - program will try download it anyway.");
             } else {
                 System.out.println("Expected file size (in MB): " + startInfoFile.summarySizeInMB);
-                checkFreeSpace(startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
+                checkFreeSpace(downloadDirectory, startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
             }
 
             return startInfoFile.fileName;
@@ -90,14 +87,7 @@ public class ClientLogic extends CommonLogic {
     private EndInfoFile tryProcessEndFile(Path filePart) throws DownloadException {
         try {
             EndInfoFile endInfoFile = new EndInfoFile(filePart);
-            Path endFilePath = Paths.get(downloadDirectory, "endInfo.txt");
-            try {
-                Files.move(filePart, endFilePath, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                throw new DownloadException(e);
-            } finally {
-                FilePartUtils.removeFile(endFilePath);
-            }
+            FilePartUtils.removeFile(filePart);
 
             return endInfoFile;
         } catch (InfoFileException ignored) {
