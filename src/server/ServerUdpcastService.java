@@ -12,8 +12,9 @@ public class ServerUdpcastService extends UdpcastService {
     public ServerUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
         super("udp-sender", configuration,
                 new ArrayList<>(Arrays.asList(
-                        "--min-wait", "3",
-                        "--start-timeout", "5"
+                        "--min-wait", "2",
+                        "--start-timeout", "5",
+                        "--full-duplex", ""
                 )));
     }
 

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.zip.Adler32;
 
 import static common.utils.FilePartUtils.removeFile;
 import static java.nio.file.StandardOpenOption.*;
@@ -79,25 +80,19 @@ public class FileService {
     }
 
     private String fileChecksum(Path filePath) throws DownloadException {
-        try {
-            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            try (InputStream inputStream = Files.newInputStream(filePath);
-                 DigestInputStream digestInputStream = new DigestInputStream(inputStream, messageDigest)) {
-                byte[] buffer = new byte[32768];
-                int readCount = 0;
-                while (readCount != -1) {
-                    readCount = digestInputStream.read(buffer);
-                }
+        Adler32 adler = new Adler32();
+        try (InputStream inputStream = Files.newInputStream(filePath)) {
+            byte[] buffer = new byte[1024 * 8];
+            while (inputStream.read(buffer) != -1) {
+                adler.update(buffer);
             }
-            byte[] checksum = messageDigest.digest();
-            String result = Base64.getEncoder().encodeToString(checksum);
-
-            joinResultFutures.add(executorService.submit(() -> mergeWithMainFileAndRemovePart(filePath)));
-
-            return result;
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (IOException e) {
             throw new DownloadException(e, "Could not create file checksum.");
         }
+
+        joinResultFutures.add(executorService.submit(() -> mergeWithMainFileAndRemovePart(filePath)));
+
+        return String.valueOf(adler.getValue());
     }
 
     private boolean mergeWithMainFileAndRemovePart(Path filePart) {
