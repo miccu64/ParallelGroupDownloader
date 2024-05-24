@@ -13,14 +13,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public abstract class UdpcastService {
-    private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-
     private final List<String> runParams;
     private Process process;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
         String executablePath;
-        if (isWindows) {
+        if (FilePartUtils.isWindows) {
             executablePath = extractExecutable("/udpcast/exe/" + programName + ".exe", programName);
         } else {
             executablePath = selectProperLinuxVersion(programName);
@@ -115,7 +113,7 @@ public abstract class UdpcastService {
         }
 
         try {
-            String extension = isWindows ? ".exe" : "";
+            String extension = FilePartUtils.isWindows ? ".exe" : "";
             File file = File.createTempFile(programName, extension);
             boolean ignored = file.setExecutable(true);
             file.deleteOnExit();

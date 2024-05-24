@@ -7,9 +7,6 @@ import common.services.UdpcastService;
 import common.utils.FilePartUtils;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,17 +37,6 @@ public abstract class CommonLogic {
 
     public abstract StatusEnum doWork();
 
-    protected void checkFreeSpace(String path, int summarySizeInMB, int partSizeInMB) throws DownloadException {
-        try {
-            FileStore store = Files.getFileStore(Paths.get(path));
-            if (store.getUsableSpace() <= (FilePartUtils.megabytesToBytes(summarySizeInMB + partSizeInMB))) {
-                throw new DownloadException("Not enough free space.");
-            }
-        } catch (IOException ignored) {
-            System.err.println("Could not check free space.");
-        }
-    }
-
     protected void cleanup() {
         udpcastService.stopUdpcast();
 
@@ -59,7 +45,7 @@ public abstract class CommonLogic {
         }
     }
 
-    protected void renameFile(Path filePath, String newName) {
+    protected Path renameFile(Path filePath, String newName) {
         Path parent = filePath.getParent();
         Path newFilePath;
         boolean result;
@@ -72,7 +58,11 @@ public abstract class CommonLogic {
             FilePartUtils.removeFile(newFilePath);
 
             result = filePath.toFile().renameTo(newFilePath.toFile());
-            newName = "1" + newName;
+            if (!result) {
+                newName = "1" + newName;
+            }
         } while (!result);
+
+        return Paths.get(String.valueOf(parent), newName).toAbsolutePath();
     }
 }

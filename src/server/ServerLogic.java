@@ -34,7 +34,10 @@ public class ServerLogic extends CommonLogic {
 
         StatusEnum result;
         try {
-            checkFreeSpace(this.downloadDirectory, fileDownloader.getFileSizeInMB(), fileDownloader.getBlockSizeInMB());
+            int sizeInMBWithMargin = fileDownloader.getFileSizeInMB() + fileDownloader.getBlockSizeInMB();
+            if (!FilePartUtils.checkFreeSpace(Paths.get(this.downloadDirectory), sizeInMBWithMargin)) {
+                throw new DownloadException("Not enough free space.");
+            }
 
             Future<StatusEnum> fileDownloaderFuture = executorService.submit(fileDownloader);
             checkDownloadIsProperlyStarted(fileDownloaderFuture);
@@ -70,8 +73,9 @@ public class ServerLogic extends CommonLogic {
             }
 
             fileService.waitForFilesJoin();
-            renameFile(finalFileTempPath, fileDownloader.getFileName());
+            Path finalFile = renameFile(finalFileTempPath, fileDownloader.getFileName());
 
+            System.out.println("Success! Downloaded file: " + finalFile);
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;

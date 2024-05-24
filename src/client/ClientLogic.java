@@ -28,9 +28,9 @@ public class ClientLogic extends CommonLogic {
 
         StatusEnum result;
         try {
-            String fileNameFromServer = processStartFile();
+            StartInfoFile startInfoFile = processStartFile();
             if (this.fileName == null) {
-                fileName = fileNameFromServer;
+                fileName = startInfoFile.fileName;
             }
             Path finalFileTempPath = Paths.get(this.downloadDirectory, fileName + ".client");
             finalFileTempPath.toFile().deleteOnExit();
@@ -40,7 +40,7 @@ public class ClientLogic extends CommonLogic {
             EndInfoFile endInfoFile = null;
             int partCount = 0;
             while (endInfoFile == null) {
-                Path filePart = generateFilePartPath(fileName, partCount);
+                Path filePart = FilePartUtils.generateFilePartPath(downloadDirectory, fileName + ".clientpart" + partCount, startInfoFile.partSizeInMB);
                 udpcastService.processFile(filePart);
                 partCount++;
 
@@ -52,8 +52,9 @@ public class ClientLogic extends CommonLogic {
 
             compareChecksums(endInfoFile.getChecksums(), fileService.waitForChecksums());
             fileService.waitForFilesJoin();
-            renameFile(finalFileTempPath, fileName);
+            Path finalFile = renameFile(finalFileTempPath, fileName);
 
+            System.out.println("Success! Downloaded file: " + finalFile);
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;
@@ -64,7 +65,7 @@ public class ClientLogic extends CommonLogic {
         return result;
     }
 
-    private String processStartFile() throws DownloadException {
+    private StartInfoFile processStartFile() throws DownloadException {
         Path startFilePath = Paths.get(downloadDirectory, "startInfo.txt");
         try {
             udpcastService.processFile(startFilePath);
@@ -75,10 +76,13 @@ public class ClientLogic extends CommonLogic {
                 System.out.println("Not known file size - program will try download it anyway.");
             } else {
                 System.out.println("Expected file size (in MB): " + startInfoFile.summarySizeInMB);
-                checkFreeSpace(downloadDirectory, startInfoFile.summarySizeInMB, startInfoFile.partSizeInMB);
+                int sizeInMBWithMargin = startInfoFile.summarySizeInMB + startInfoFile.partSizeInMB;
+                if (!FilePartUtils.checkFreeSpace(startFilePath, sizeInMBWithMargin)) {
+                    throw new DownloadException("Not enough free space.");
+                }
             }
 
-            return startInfoFile.fileName;
+            return startInfoFile;
         } finally {
             FilePartUtils.removeFile(startFilePath);
         }
@@ -93,12 +97,6 @@ public class ClientLogic extends CommonLogic {
         } catch (InfoFileException ignored) {
             return null;
         }
-    }
-
-    private Path generateFilePartPath(String fileName, int partCount) {
-        Path path = Paths.get(downloadDirectory, fileName + ".part" + partCount);
-        path.toFile().deleteOnExit();
-        return path;
     }
 
     private void compareChecksums(List<String> expectedChecksums, List<String> actualChecksums) throws DownloadException {

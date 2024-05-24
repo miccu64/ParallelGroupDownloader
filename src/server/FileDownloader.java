@@ -23,9 +23,9 @@ public class FileDownloader implements Callable<StatusEnum> {
     private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
     private final long blockSizeInBytes;
     private final int fileSizeInMB;
-    private final Path filePath;
     private final String fileName;
     private final URL url;
+    private final String downloadDirectory;
 
     public List<Path> getProcessedFiles() {
         return new ArrayList<>(processedFiles);
@@ -47,7 +47,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         return FilePartUtils.bytesToMegabytes(blockSizeInBytes);
     }
 
-    public FileDownloader(String urlString, String downloadPath, String fileName, int blockSizeInMB) throws DownloadException {
+    public FileDownloader(String urlString, String downloadDirectory, String fileName, int blockSizeInMB) throws DownloadException {
         if (urlString == null || urlString.isEmpty()) {
             throw new DownloadException("Empty url.");
         }
@@ -55,6 +55,7 @@ public class FileDownloader implements Callable<StatusEnum> {
             throw new DownloadException("Block size must be at least equal 1MB.");
         }
 
+        this.downloadDirectory = downloadDirectory;
         try {
             URI uri = parseUrl(urlString);
             this.url = uri.toURL();
@@ -65,7 +66,6 @@ public class FileDownloader implements Callable<StatusEnum> {
                 fileName = getFileName(uri);
             }
             this.fileName = fileName;
-            filePath = Paths.get(downloadPath, fileName);
         } catch (IllegalArgumentException | MalformedURLException e) {
             throw new DownloadException(e, "Malformed URL.");
         }
@@ -84,9 +84,8 @@ public class FileDownloader implements Callable<StatusEnum> {
             System.out.println("Download started! Url: " + url);
 
             do {
-                Path filePartPath = createFilePartPath(blockNumber);
+                Path filePartPath = FilePartUtils.generateFilePartPath(downloadDirectory, fileName + ".serverpart" + blockNumber, getBlockSizeInMB());
                 File partFile = filePartPath.toFile();
-                partFile.deleteOnExit();
                 blockNumber++;
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
@@ -173,9 +172,5 @@ public class FileDownloader implements Callable<StatusEnum> {
                 }
             }
         }
-    }
-
-    private Path createFilePartPath(int partNumber) {
-        return Paths.get(filePath + ".part" + partNumber).toAbsolutePath();
     }
 }

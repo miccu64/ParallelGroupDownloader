@@ -45,27 +45,14 @@ public class FilePartUtilsTests {
         }
 
         // Act
-        FilePartUtils.removeFiles(files);
+        for (Path p : files) {
+            FilePartUtils.removeFile(p);
+        }
 
         // Assert
         for (Path file : files) {
             Assertions.assertFalse(Files.exists(file));
         }
-    }
-
-    @Test
-    public void removeFiles_ShouldNotThrowWhenFilesDoNotExist() {
-        // Arrange
-        List<File> files = new ArrayList<>();
-        files.add(new File("removeFiles_ShouldNotThrowWhenFilesDoNotExist1"));
-        files.add(new File("removeFiles_ShouldNotThrowWhenFilesDoNotExist2"));
-
-        for (File file : files) {
-            Assertions.assertFalse(file.exists());
-        }
-
-        // Act / Assert
-        Assertions.assertDoesNotThrow(() -> FilePartUtils.removeFiles(files.stream().map(File::toPath).collect(Collectors.toList())));
     }
 
     @Test
