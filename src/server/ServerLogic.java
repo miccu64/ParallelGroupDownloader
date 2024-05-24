@@ -8,6 +8,7 @@ import common.models.StatusEnum;
 import common.models.UdpcastConfiguration;
 import common.services.FileService;
 import common.utils.FilePartUtils;
+import common.utils.VariousUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,7 +51,7 @@ public class ServerLogic extends CommonLogic {
                 processedStartFile = processStartFile();
                 if (!processedStartFile) {
                     System.out.println("Could not find any clients. Program will retry in next 1 minute if download will be still in progress.");
-                    sleep(60);
+                    VariousUtils.sleep(60);
                 }
             } while (!processedStartFile && !fileDownloaderFuture.isDone());
 
@@ -59,6 +60,8 @@ public class ServerLogic extends CommonLogic {
                     Path fileToProcess = tryGetUnprocessedFile();
                     if (fileToProcess != null) {
                         processFilePart(fileToProcess);
+                    } else {
+                        VariousUtils.sleep(1);
                     }
                 } while (!fileDownloaderFuture.isDone());
 
@@ -101,7 +104,7 @@ public class ServerLogic extends CommonLogic {
     }
 
     private void checkDownloadIsProperlyStarted(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
-        sleep(1);
+        VariousUtils.sleep(1);
         if (fileDownloaderFuture.isDone()) {
             checkFileDownloaderSuccess(fileDownloaderFuture);
         }
@@ -110,7 +113,7 @@ public class ServerLogic extends CommonLogic {
     private void delayIfRequested() {
         if (delayInMinutes > 0) {
             System.out.println("Starting delay for minutes: " + delayInMinutes);
-            sleep(delayInMinutes * 60);
+            VariousUtils.sleep(delayInMinutes * 60);
             System.out.println("Delay end.");
         }
     }
@@ -151,6 +154,8 @@ public class ServerLogic extends CommonLogic {
     private void processFilePart(Path filePath) throws DownloadException {
         udpcastService.processFile(filePath);
         fileService.addFileToProcess(filePath);
+
+        fileDownloader.incrementUdpcastProcessedParts();
     }
 
     private void checkFileDownloaderSuccess(Future<StatusEnum> fileDownloaderFuture) throws DownloadException {
@@ -179,14 +184,6 @@ public class ServerLogic extends CommonLogic {
             udpcastService.processFile(endInfoFile.filePath);
         } finally {
             FilePartUtils.removeFile(endInfoFile.filePath);
-        }
-    }
-
-    private void sleep(int timeInSeconds) {
-        try {
-            Thread.sleep(1000L * timeInSeconds);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 }

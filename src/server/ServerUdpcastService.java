@@ -3,6 +3,7 @@ package server;
 import common.exceptions.DownloadException;
 import common.models.UdpcastConfiguration;
 import common.services.UdpcastService;
+import common.utils.VariousUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,16 +23,8 @@ public class ServerUdpcastService extends UdpcastService {
     public void processFile(Path filePath) throws DownloadException {
         super.processFile(filePath);
 
-        waitForReceiversFinalize();
-    }
-
-    private void waitForReceiversFinalize() {
         // udp-receiver has by default 500 delay in closing (--exit-wait parameter)
         // receiver waits 500ms after receiving the final REQACK in order to guard against loss of the final ACK
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        VariousUtils.sleep(1);
     }
 }

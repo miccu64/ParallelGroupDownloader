@@ -1,1 +1,0 @@
-- niepobieranie w FileDownloader więcej niż 1 parta w przód

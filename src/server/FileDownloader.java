@@ -3,6 +3,7 @@ package server;
 import common.exceptions.DownloadException;
 import common.models.StatusEnum;
 import common.utils.FilePartUtils;
+import common.utils.VariousUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,14 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileDownloader implements Callable<StatusEnum> {
     private final ConcurrentLinkedQueue<Path> processedFiles = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger udpcastProcessedParts = new AtomicInteger(0);
     private final long blockSizeInBytes;
     private final int fileSizeInMB;
     private final String fileName;
     private final URL url;
     private final String downloadDirectory;
+
+    public void incrementUdpcastProcessedParts() {
+        udpcastProcessedParts.incrementAndGet();
+    }
 
     public List<Path> getProcessedFiles() {
         return new ArrayList<>(processedFiles);
@@ -84,17 +91,18 @@ public class FileDownloader implements Callable<StatusEnum> {
             System.out.println("Download started! Url: " + url);
 
             do {
+                waitForUdpcastProgress(blockNumber);
+
                 Path filePartPath = FilePartUtils.generateFilePartPath(downloadDirectory, fileName + ".serverpart" + blockNumber, getBlockSizeInMB());
-                File partFile = filePartPath.toFile();
                 blockNumber++;
 
-                try (FileOutputStream fileOutputStream = new FileOutputStream(partFile);
+                try (FileOutputStream fileOutputStream = new FileOutputStream(filePartPath.toFile());
                      FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
                     System.out.println("Downloading: " + filePartPath.getFileName());
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
                     processedFiles.add(filePartPath);
-                    System.err.println("Cannot save to file: " + partFile + ". Error: " + e.getMessage());
+                    System.err.println("Cannot save to file: " + filePartPath + ". Error: " + e.getMessage());
                     return StatusEnum.Error;
                 }
 
@@ -171,6 +179,12 @@ public class FileDownloader implements Callable<StatusEnum> {
                 } catch (IOException ignored) {
                 }
             }
+        }
+    }
+
+    private void waitForUdpcastProgress(int blockNumber) {
+        while (blockNumber - udpcastProcessedParts.get() >= 2) {
+            VariousUtils.sleep(1);
         }
     }
 }
