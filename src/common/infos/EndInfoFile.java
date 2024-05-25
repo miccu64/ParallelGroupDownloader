@@ -28,7 +28,7 @@ public class EndInfoFile extends InfoFile {
 
         this.checksums = checksums;
 
-        filePath = Paths.get(saveDirectory, "endInfo.txt");
+        filePath = Paths.get(saveDirectory, "endInfoServer.txt");
         saveToFile(filePath);
     }
 

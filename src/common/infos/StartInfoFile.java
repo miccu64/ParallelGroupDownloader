@@ -27,7 +27,7 @@ public class StartInfoFile extends InfoFile {
         this.summarySizeInMB = summarySizeInMB;
         this.partSizeInMB = partSizeInMB;
 
-        filePath = Paths.get(saveDirectory, "startInfo.txt");
+        filePath = Paths.get(saveDirectory, "startInfoServer.txt");
         saveToFile(filePath);
     }
 

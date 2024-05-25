@@ -65,7 +65,7 @@ public class ClientLogic extends CommonLogic {
     }
 
     private StartInfoFile processStartFile() throws DownloadException {
-        Path startFilePath = Paths.get(downloadDirectory, "startInfo.txt");
+        Path startFilePath = Paths.get(downloadDirectory, "startInfoClient.txt");
         try {
             udpcastService.processFile(startFilePath);
             StartInfoFile startInfoFile = new StartInfoFile(startFilePath);

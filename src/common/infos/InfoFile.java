@@ -27,6 +27,14 @@ public abstract class InfoFile {
 
     protected List<String> tryGetInfo(Path filePath, String separator) throws DownloadException, InfoFileException {
         try {
+            try {
+                String mimeType = Files.probeContentType(filePath);
+                if (!mimeType.contains("text")) {
+                    throw new InfoFileException("Improper file mime type.");
+                }
+            } catch (IOException ignored) {
+            }
+
             long fileSizeInBytes = Files.size(filePath);
             if (fileSizeInBytes > 1000000) {
                 throw new InfoFileException("Improper file size.");
