@@ -5,6 +5,7 @@ import common.exceptions.InfoFileException;
 import common.utils.FilePartUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,17 +28,11 @@ public abstract class InfoFile {
 
     protected List<String> tryGetInfo(Path filePath, String separator) throws DownloadException, InfoFileException {
         try {
-            try {
-                String mimeType = Files.probeContentType(filePath);
-                if (!mimeType.contains("text")) {
-                    throw new InfoFileException("Improper file mime type.");
+            try (InputStream is = Files.newInputStream(filePath)) {
+                byte[] buffer = new byte[separator.length()];
+                if (is.read(buffer) != separator.length() || !(new String(buffer, StandardCharsets.ISO_8859_1)).equals(separator)) {
+                    throw new InfoFileException("Not starting with proper separator.");
                 }
-            } catch (IOException ignored) {
-            }
-
-            long fileSizeInBytes = Files.size(filePath);
-            if (fileSizeInBytes > 1000000) {
-                throw new InfoFileException("Improper file size.");
             }
 
             long lineCount;
