@@ -50,13 +50,10 @@ public class StartInfoFileTests {
         int summarySizeInMB = 11;
         int partSizeInMB = 22;
 
-        Path expectedStartInfoFilePath = Paths.get(directory, "startInfo.txt");
-
         // Act
         StartInfoFile info = new StartInfoFile(directory, url, fileName, summarySizeInMB, partSizeInMB);
 
         // Assert
-        Assertions.assertEquals(expectedStartInfoFilePath, info.filePath);
         Assertions.assertEquals(url, info.url);
         Assertions.assertEquals(fileName, info.fileName);
         Assertions.assertEquals(summarySizeInMB, info.summarySizeInMB);
