@@ -17,7 +17,7 @@ import static utils.CommonUtils.generateFile;
 
 public class FileServiceTests {
     @Test
-    public void waitForChecksums_ShouldReturnTheSameChecksumForIdenticalFileContent() throws IOException, DownloadException {
+    public void shouldReturnTheSameChecksumForIdenticalFileContent() throws IOException, DownloadException {
         // Arrange
         Path original = generateFile(1);
         Path copy = Files.copy(original, Paths.get(original.toAbsolutePath() + "Copy"));
@@ -36,7 +36,7 @@ public class FileServiceTests {
     }
 
     @Test
-    public void waitForChecksums_ShouldReturnDifferentChecksumsForDifferentFiles() throws IOException, DownloadException {
+    public void shouldReturnDifferentChecksumsForDifferentFiles() throws IOException, DownloadException {
         // Arrange
         Path file1 = generateFile(1);
         Path file2 = generateFile(1);
@@ -53,9 +53,9 @@ public class FileServiceTests {
     }
 
     @Test
-    public void waitForChecksums_ShouldThrowWhenFileDoesNotExist() throws DownloadException, IOException {
+    public void shouldThrowWhenFileDoesNotExist() throws DownloadException, IOException {
         // Arrange
-        Path path = Paths.get("waitForChecksums_ShouldThrowWhenFileDoesNotExist");
+        Path path = Paths.get("shouldThrowWhenFileDoesNotExist");
         Assertions.assertFalse(Files.exists(path));
 
         // Act
@@ -67,7 +67,7 @@ public class FileServiceTests {
     }
 
     @Test
-    public void waitForChecksums_ShouldThrowWhenFileDoesNotExists() throws DownloadException, IOException {
+    public void shouldSumOfPartsSizeEqualJoinedFileSize() throws DownloadException, IOException {
         // Arrange
         long expectedSize = 0;
         List<Path> files = new ArrayList<>();
@@ -83,9 +83,7 @@ public class FileServiceTests {
         for (Path path : files) {
             fileService.addFileToProcess(path);
         }
-        fileService.waitForFilesJoin();
-        fileService.waitForFilesJoin();
-        fileService.waitForFilesJoin();
+        fileService.waitForChecksums();
 
         // Assert
         Assertions.assertEquals(expectedSize, Files.size(joinedFile));

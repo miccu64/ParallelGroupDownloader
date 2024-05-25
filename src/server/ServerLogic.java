@@ -77,7 +77,6 @@ public class ServerLogic extends CommonLogic {
                 }
             }
 
-            fileService.waitForFilesJoin();
             Path finalFile = renameFile(finalFileTempPath, fileDownloader.getFileName());
 
             System.out.println("Success! Downloaded file: " + finalFile);

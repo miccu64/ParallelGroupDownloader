@@ -35,7 +35,7 @@ public class DownloaderTests {
         for (Path p : fileDownloader.getProcessedFiles()) {
             fileService.addFileToProcess(p);
         }
-        fileService.waitForFilesJoin();
+        fileService.waitForChecksums();
 
         // calculate checksums of joined files
         fileService = new FileService(Files.createTempFile(null, null));
@@ -92,7 +92,7 @@ public class DownloaderTests {
             sizeInBytes += Files.size(filePart);
         }
 
-        fileService.waitForFilesJoin();
+        fileService.waitForChecksums();
 
         long sizeInBytesAfterJoin = Files.size(finalFilePath);
 

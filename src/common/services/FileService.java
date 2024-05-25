@@ -5,6 +5,7 @@ import common.utils.FilePartUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,11 +15,11 @@ import java.util.concurrent.*;
 import java.util.zip.Adler32;
 
 import static common.utils.FilePartUtils.removeFile;
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class FileService {
-    private final ConcurrentLinkedQueue<Future<String>> checksumFutures = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<Future<Boolean>> joinResultFutures = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Future<String>> futures = new ConcurrentLinkedQueue<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Path finalFilePath;
 
@@ -34,34 +35,20 @@ public class FileService {
     }
 
     public void addFileToProcess(Path path) {
-        checksumFutures.add(executorService.submit(() -> fileChecksum(path)));
+        futures.add(executorService.submit(() -> calcChecksumAndMerge(path)));
     }
 
     public List<String> waitForChecksums() throws DownloadException {
         List<String> checksums = new ArrayList<>();
-        for (Future<String> future : checksumFutures) {
+        for (Future<String> future : futures) {
             try {
-                checksums.add(future.get(1, TimeUnit.HOURS));
+                checksums.add(future.get(2, TimeUnit.HOURS));
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new DownloadException("Could not calculate checksums.");
+                throw new DownloadException("Could not calculate checksums and join files.");
             }
         }
+
         return checksums;
-    }
-
-    public void waitForFilesJoin() throws DownloadException {
-        System.out.println("Waiting for end of files joining...");
-        waitForChecksums();
-
-        for (Future<Boolean> future : joinResultFutures) {
-            try {
-                if (!future.get(2, TimeUnit.HOURS)) {
-                    throw new DownloadException("Could not join files.");
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new DownloadException("Could not join files.");
-            }
-        }
     }
 
     public void shutdown() {
@@ -75,39 +62,31 @@ public class FileService {
         }
     }
 
-    private String fileChecksum(Path filePath) throws DownloadException {
-        System.out.println("Checksum start: " + filePath);
+    private String calcChecksumAndMerge(Path filePart) throws DownloadException {
+        System.out.println("Joining and calculating checksum for file part: " + filePart.getFileName());
+
         Adler32 adler = new Adler32();
-        try (InputStream inputStream = Files.newInputStream(filePath)) {
-            byte[] buffer = new byte[1024 * 8];
-            while (inputStream.read(buffer) != -1) {
-                adler.update(buffer);
-            }
-        } catch (IOException e) {
-            throw new DownloadException(e, "Could not create file checksum.");
-        }
-        System.out.println("Checksum enddddd: " + filePath);
-        joinResultFutures.add(executorService.submit(() -> mergeWithMainFileAndRemovePart(filePath)));
-
-        return String.valueOf(adler.getValue());
-    }
-
-    private boolean mergeWithMainFileAndRemovePart(Path filePart) {
         try (FileChannel out = FileChannel.open(finalFilePath, WRITE, APPEND)) {
-            System.out.println("Joining file part: " + filePart.getFileName());
+            try (InputStream inputStream = Files.newInputStream(filePart)) {
+                byte[] buffer = new byte[1024 * 8];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    adler.update(buffer, 0, bytesRead);
 
-            try (FileChannel in = FileChannel.open(filePart, READ)) {
-                long fileSizeInBytes = in.size();
-                for (long position = 0; position < fileSizeInBytes; ) {
-                    position += in.transferTo(position, fileSizeInBytes - position, out);
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
+                    while (byteBuffer.hasRemaining()) {
+                        int ignored = out.write(byteBuffer);
+                    }
                 }
             }
+
             removeFile(filePart);
         } catch (IOException e) {
             String error = e.getMessage() != null ? " Error: " + e.getMessage() : "";
-            System.err.println("Error while joining parts of file." + error);
-            return false;
+            throw new DownloadException("Error while calculating checksum and joining parts of file." + error);
         }
-        return true;
+
+        System.out.println("Merged file part: " + filePart.getFileName());
+        return String.valueOf(adler.getValue());
     }
 }

@@ -51,7 +51,6 @@ public class ClientLogic extends CommonLogic {
             }
 
             compareChecksums(endInfoFile.getChecksums(), fileService.waitForChecksums());
-            fileService.waitForFilesJoin();
             Path finalFile = renameFile(finalFileTempPath, fileName);
 
             System.out.println("Success! Downloaded file: " + finalFile);
