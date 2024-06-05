@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public abstract class UdpcastService {
+    protected Process process;
     private final List<String> runParams;
-    private Process process;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
         String executablePath;
@@ -62,14 +62,7 @@ public abstract class UdpcastService {
 
     public void stopUdpcast() {
         if (process != null) {
-            process.destroy();
-            try {
-                if (!process.waitFor(1, TimeUnit.SECONDS)) {
-                    process.destroyForcibly();
-                }
-            } catch (InterruptedException ignored) {
-                process.destroyForcibly();
-            }
+            process.destroyForcibly();
         }
     }
 

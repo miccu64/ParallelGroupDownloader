@@ -11,7 +11,7 @@ public class ClientUdpcastService extends UdpcastService {
     public ClientUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
         super("udp-receiver", configuration,
                 new ArrayList<>(Arrays.asList(
-                        "--receive-timeout", "60",
+                        "--receive-timeout", "20",
                         "--start-timeout", "1800"
                 )));
     }

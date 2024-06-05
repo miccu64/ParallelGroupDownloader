@@ -1,13 +1,17 @@
 package server;
 
 import common.exceptions.DownloadException;
+import common.infos.EndInfoFile;
 import common.models.UdpcastConfiguration;
 import common.services.UdpcastService;
 import common.utils.VariousUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class ServerUdpcastService extends UdpcastService {
     public ServerUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
@@ -26,5 +30,16 @@ public class ServerUdpcastService extends UdpcastService {
         // udp-receiver has by default 500 delay in closing (--exit-wait parameter)
         // receiver waits 500ms after receiving the final REQACK in order to guard against loss of the final ACK
         VariousUtils.sleep(1);
+    }
+
+    public void shutdownClients() {
+        if (process != null && !process.isAlive()) {
+            try {
+                Path tempDir = Files.createTempDirectory(null);
+                EndInfoFile endInfoFile = new EndInfoFile(String.valueOf(tempDir), Collections.singletonList("ERROR!!!"));
+                super.processFile(endInfoFile.filePath);
+            } catch (DownloadException | IOException ignored) {
+            }
+        }
     }
 }

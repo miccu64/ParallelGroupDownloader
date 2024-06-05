@@ -13,6 +13,7 @@ import common.utils.VariousUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ServerLogic extends CommonLogic {
     private final int delayInMinutes;
@@ -20,6 +21,7 @@ public class ServerLogic extends CommonLogic {
     private final FileDownloader fileDownloader;
 
     private int processedPartsCount = 0;
+    private final AtomicBoolean invokedCleanup = new AtomicBoolean(false);
 
     public ServerLogic(UdpcastConfiguration configuration) throws DownloadException {
         super(new ServerUdpcastService(configuration), configuration.getDirectory());
@@ -92,14 +94,17 @@ public class ServerLogic extends CommonLogic {
 
     @Override
     protected void cleanup() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException ignored) {
-            executorService.shutdownNow();
+        if (invokedCleanup.getAndSet(true)) {
+            return;
         }
+
+        executorService.shutdownNow();
+
+        if (fileService != null) {
+            fileService.shutdownNow();
+        }
+
+        ((ServerUdpcastService) udpcastService).shutdownClients();
 
         super.cleanup();
     }

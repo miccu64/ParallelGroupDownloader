@@ -41,7 +41,7 @@ public abstract class CommonLogic {
         udpcastService.stopUdpcast();
 
         if (fileService != null) {
-            fileService.shutdown();
+            fileService.shutdownNow();
         }
     }
 

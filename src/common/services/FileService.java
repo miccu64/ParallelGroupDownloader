@@ -51,15 +51,8 @@ public class FileService {
         return checksums;
     }
 
-    public void shutdown() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException ignored) {
-            executorService.shutdownNow();
-        }
+    public void shutdownNow() {
+        executorService.shutdownNow();
     }
 
     private String calcChecksumAndMerge(Path filePart) throws DownloadException {
