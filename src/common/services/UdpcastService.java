@@ -113,7 +113,7 @@ public abstract class UdpcastService {
 
             try (FileOutputStream outputStream = new FileOutputStream(file);
                  InputStream inputStream = executableUrl.openStream()) {
-                byte[] buffer = new byte[16384];
+                byte[] buffer = new byte[1024];
                 int length;
                 while ((length = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, length);
