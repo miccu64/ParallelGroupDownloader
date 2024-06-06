@@ -35,7 +35,10 @@ public class FileService {
     }
 
     public void addFileToProcess(Path path) {
-        futures.add(executorService.submit(() -> calcChecksumAndMerge(path)));
+        try {
+            futures.add(executorService.submit(() -> calcChecksumAndMerge(path)));
+        } catch (RejectedExecutionException ignored) {
+        }
     }
 
     public List<String> waitForChecksums() throws DownloadException {

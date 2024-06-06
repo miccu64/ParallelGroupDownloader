@@ -7,6 +7,8 @@ import common.services.UdpcastService;
 import common.utils.FilePartUtils;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +40,8 @@ public abstract class CommonLogic {
     public abstract StatusEnum doWork();
 
     protected void cleanup() {
+        suppressStdErr();
+
         udpcastService.stopUdpcast();
 
         if (fileService != null) {
@@ -64,5 +68,13 @@ public abstract class CommonLogic {
         } while (!result);
 
         return Paths.get(String.valueOf(parent), newName).toAbsolutePath();
+    }
+
+    private void suppressStdErr() {
+        PrintStream dummyStream = new PrintStream(new OutputStream() {
+            public void write(int b) {
+            }
+        });
+        System.setErr(dummyStream);
     }
 }
