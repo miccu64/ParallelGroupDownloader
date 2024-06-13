@@ -79,6 +79,8 @@ public class ClientLogic extends CommonLogic {
                 if (!FilePartUtils.checkFreeSpace(startFilePath, sizeInMBWithMargin)) {
                     throw new DownloadException("Not enough free space.");
                 }
+
+                udpcastService.setDownloadSize(startInfoFile.summarySizeInMB);
             }
 
             return startInfoFile;

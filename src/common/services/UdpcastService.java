@@ -15,6 +15,9 @@ import java.util.concurrent.TimeUnit;
 public abstract class UdpcastService {
     protected Process process;
     private final List<String> runParams;
+    private long downloadSizeInBytes = 0;
+    private long remainingSizeInBytes = 0;
+    private long startTime;
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
         String executablePath;
@@ -28,6 +31,8 @@ public abstract class UdpcastService {
         params.add("--nokbd");
         params.add("--portbase");
         params.add(String.valueOf(configuration.getPortbase()));
+        params.add("--stat-period");
+        params.add("1000");
         if (configuration.getNetworkInterface() != null) {
             params.add("--interface");
             params.add(configuration.getNetworkInterface());
@@ -45,6 +50,7 @@ public abstract class UdpcastService {
 
         ProcessBuilder processBuilder = new ProcessBuilder(params).redirectErrorStream(true);
         try {
+            System.out.println("UDPcast - processing file part: " + filePath.toAbsolutePath());
             process = processBuilder.start();
             getProcessOutput(process);
 
@@ -60,6 +66,12 @@ public abstract class UdpcastService {
         }
     }
 
+    public void setDownloadSize(int downloadSizeInMB) {
+        this.downloadSizeInBytes = FilePartUtils.megabytesToBytes(downloadSizeInMB);
+        this.remainingSizeInBytes = this.downloadSizeInBytes;
+        this.startTime = System.nanoTime();
+    }
+
     public void stopUdpcast() {
         if (process != null) {
             process.destroyForcibly();
@@ -70,15 +82,56 @@ public abstract class UdpcastService {
         try (InputStream is = process.getInputStream();
              InputStreamReader isReader = new InputStreamReader(is);
              BufferedReader reader = new BufferedReader(isReader)) {
-            try {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                    System.out.flush();
+            String speedLineStart = "bytes=";
+            long bytes;
+            long latestBytes = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith(speedLineStart)) {
+                    continue;
                 }
-            } catch (IOException ignored) {
+
+                bytes = parseBytes(line.substring(speedLineStart.length()));
+                long currentBytes = bytes - latestBytes;
+                latestBytes = bytes;
+                remainingSizeInBytes -= currentBytes;
+
+                printDownloadInfo(currentBytes);
             }
         }
+    }
+
+    private long parseBytes(String text) {
+        StringBuilder result = new StringBuilder();
+        for (char character : text.toCharArray()) {
+            boolean isDigit = Character.isDigit(character);
+            boolean isSpace = character == ' ';
+            if (isDigit) {
+                result.append(character);
+            } else if (!isSpace) {
+                break;
+            }
+        }
+
+        return Long.parseLong(result.toString());
+    }
+
+    private void printDownloadInfo(long currentBytes) {
+        int speedMBps = FilePartUtils.bytesToMegabytes(currentBytes);
+        String outText = "Speed: " + speedMBps + "MBps, estimated time left: ";
+        if (remainingSizeInBytes > 0) {
+            long secondsElapsed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime);
+            long megabytesDownloaded = FilePartUtils.bytesToMegabytes(downloadSizeInBytes - remainingSizeInBytes);
+            double ratioMBps = (double) megabytesDownloaded / secondsElapsed;
+            double estimatedTime = FilePartUtils.bytesToMegabytes(remainingSizeInBytes) / ratioMBps;
+            int estimatedMinutes = (int) (estimatedTime / 60);
+            int estimatedSeconds = (int) estimatedTime - estimatedMinutes * 60;
+
+            outText += estimatedMinutes + " minutes " + estimatedSeconds + " seconds";
+        } else {
+            outText += "n/a";
+        }
+        System.out.println(outText);
     }
 
     private String selectProperLinuxVersion(String programName) throws DownloadException {
@@ -95,8 +148,8 @@ public abstract class UdpcastService {
             }
         }
 
-        throw new DownloadException("Cannot run udpcast library. Missing GLIBC library (required min version 2.34) " +
-                "or not supported OS. Try install via 'sudo apt install libc6'.");
+        throw new DownloadException("Cannot run udpcast library. Missing GLIBC library " +
+                "(required min version 2.34 - try install via 'sudo apt install libc6') or not supported OS.");
     }
 
     private String extractExecutable(String resourcePath, String programName) throws DownloadException {

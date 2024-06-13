@@ -134,6 +134,7 @@ public class ServerLogic extends CommonLogic {
         long startTime = System.nanoTime();
         try {
             udpcastService.processFile(startInfoFile.filePath);
+            udpcastService.setDownloadSize(startInfoFile.summarySizeInMB);
             return true;
         } catch (DownloadException e) {
             long executionTime = System.nanoTime() - startTime;

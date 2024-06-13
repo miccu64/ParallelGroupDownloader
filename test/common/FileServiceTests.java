@@ -4,7 +4,7 @@ import common.exceptions.DownloadException;
 import common.services.FileService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import utils.CommonUtils;
+import testingUtils.CommonTestingUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static utils.CommonUtils.generateFile;
+import static testingUtils.CommonTestingUtils.generateFile;
 
 public class FileServiceTests {
     @Test
@@ -72,7 +72,7 @@ public class FileServiceTests {
         long expectedSize = 0;
         List<Path> files = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            Path path = CommonUtils.generateFile(1);
+            Path path = CommonTestingUtils.generateFile(1);
             files.add(path);
             expectedSize += Files.size(path);
         }

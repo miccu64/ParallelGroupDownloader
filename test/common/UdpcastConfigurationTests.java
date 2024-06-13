@@ -198,4 +198,13 @@ public class UdpcastConfigurationTests {
         // Act / Assert
         Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
     }
+
+    @Test
+    public void shouldAcceptQuiet() {
+        // Arrange
+        String[] args = new String[]{"-quiet"};
+
+        // Act / Assert
+        Assertions.assertDoesNotThrow(() -> new UdpcastConfiguration(args));
+    }
 }

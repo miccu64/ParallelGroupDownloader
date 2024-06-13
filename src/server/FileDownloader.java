@@ -98,7 +98,7 @@ public class FileDownloader implements Callable<StatusEnum> {
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream(filePartPath.toFile());
                      FileChannel fileOutputChannel = fileOutputStream.getChannel()) {
-                    System.out.println("Downloading: " + filePartPath.getFileName());
+                    System.out.println("Server downloading: " + filePartPath.getFileName());
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
                     processedFiles.add(filePartPath);

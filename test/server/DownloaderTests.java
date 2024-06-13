@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static utils.CommonUtils.generateFile;
+import static testingUtils.CommonTestingUtils.generateFile;
 
 public class DownloaderTests {
     @Test

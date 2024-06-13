@@ -2,9 +2,12 @@ package common.models;
 
 import common.exceptions.ConfigurationException;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class UdpcastConfiguration {
@@ -51,19 +54,25 @@ public class UdpcastConfiguration {
     }
 
     public UdpcastConfiguration(String[] args) throws ConfigurationException {
-        if (Arrays.asList(args).contains("-help")) {
+        ArrayList<String> argsList = new ArrayList<>(Arrays.asList(args));
+        if (argsList.contains("-help")) {
             isHelpInvoked = true;
             return;
         }
 
-        if (args.length % 2 != 0) {
+        String quietArg = "-quiet";
+        if (argsList.remove(quietArg)) {
+            suppressStdOut();
+        }
+
+        if (argsList.size() % 2 != 0) {
             throw new ConfigurationException("One of given parameters does not have corresponding value.");
         }
 
         boolean serverOptionGiven = false;
-        for (int i = 0; i < args.length; i += 2) {
-            String key = getKey(args[i]);
-            String value = getValue(args[i + 1]);
+        for (int i = 0; i < argsList.size(); i += 2) {
+            String key = getKey(argsList.get(i));
+            String value = getValue(argsList.get(i + 1));
             if (value.isEmpty()) {
                 throw new ConfigurationException("Empty value was given.");
             }
@@ -137,8 +146,16 @@ public class UdpcastConfiguration {
     private Path parsePath(String value) throws ConfigurationException {
         try {
             return Paths.get(value);
-        } catch (InvalidPathException e){
+        } catch (InvalidPathException e) {
             throw new ConfigurationException("Invalid path of filename or directory.");
         }
+    }
+
+    private void suppressStdOut() {
+        PrintStream dummyStream = new PrintStream(new OutputStream() {
+            public void write(int b) {
+            }
+        });
+        System.setOut(dummyStream);
     }
 }

@@ -25,5 +25,3 @@ Chodzi o stworzenie aplikacji w Java, która będzie kopiować duży plik pomię
 Aby nie odkrywać koła na nowo, warto zerknąć na gotowe rozwiązania do transferu 1 do wielu poprzez UDP i broadcast. 
 Jest taki zestaw programów: udp-sender / udp-receiver
 Tam są możliwości konfiguracji, kiedy transfer się faktycznie rozpocznie.
-
-Generalnie chodzi o to, aby utworzyć łańcuch kolejnych maszyn. Pierwsza pobiera plik z własnego dysku lub serwera WWW. Odczytany fragment przekazuje kolejnej. Tak posiadane już fragmenty przekazuje kolejnej maszynie. Itd. 
