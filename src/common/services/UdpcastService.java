@@ -87,7 +87,14 @@ public abstract class UdpcastService {
             long latestBytes = 0;
             String line;
             while ((line = reader.readLine()) != null) {
+                System.out.println(line);
                 if (!line.startsWith(speedLineStart)) {
+                    if (line.startsWith("Timeout")) {
+                        System.out.print("Lost connection with one of clients - waiting...");
+                    } else if (line.startsWith("Dropping client")) {
+                        System.out.println("Dropped one of clients");
+                    }
+
                     continue;
                 }
 
