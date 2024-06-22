@@ -1,9 +1,8 @@
 package common.models;
 
 import common.exceptions.ConfigurationException;
+import common.utils.VariousUtils;
 
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,7 +61,7 @@ public class UdpcastConfiguration {
 
         String quietArg = "-quiet";
         if (argsList.remove(quietArg)) {
-            suppressStdOut();
+            VariousUtils.suppressStdOut();
         }
 
         if (argsList.size() % 2 != 0) {
@@ -149,13 +148,5 @@ public class UdpcastConfiguration {
         } catch (InvalidPathException e) {
             throw new ConfigurationException("Invalid path of filename or directory.");
         }
-    }
-
-    private void suppressStdOut() {
-        PrintStream dummyStream = new PrintStream(new OutputStream() {
-            public void write(int b) {
-            }
-        });
-        System.setOut(dummyStream);
     }
 }

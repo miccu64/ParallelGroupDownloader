@@ -19,7 +19,7 @@ public abstract class UdpcastService {
     private final List<String> runParams;
     private long downloadSizeInBytes = 0;
     private long remainingSizeInBytes = 0;
-    private long startTime;
+    private long startTime = System.nanoTime();
 
     protected UdpcastService(String programName, UdpcastConfiguration configuration, List<String> params) throws DownloadException {
         String executablePath;
@@ -74,6 +74,16 @@ public abstract class UdpcastService {
         this.downloadSizeInBytes = FilePartUtils.megabytesToBytes(downloadSizeInMB);
         this.remainingSizeInBytes = this.downloadSizeInBytes;
         this.startTime = System.nanoTime();
+    }
+
+    public void printStatsOnSuccess() {
+        long secondsElapsed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime);
+        long megabytesDownloaded = FilePartUtils.bytesToMegabytes(downloadSizeInBytes);
+        int avgSpeed = (int) Math.ceil((double) megabytesDownloaded / secondsElapsed);
+        int minutes = (int) (secondsElapsed / 60);
+        int seconds = (int) secondsElapsed - minutes * 60;
+
+        System.out.println("Average speed: " + avgSpeed + " MBps, time elapsed: " + minutes + "min " + seconds + "s");
     }
 
     public void stopUdpcast() {

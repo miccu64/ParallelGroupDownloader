@@ -82,6 +82,7 @@ public class ServerLogic extends CommonLogic {
             Path finalFile = renameFile(finalFileTempPath, fileDownloader.getFileName());
 
             System.out.println("Success! Downloaded file: " + finalFile);
+            udpcastService.printStatsOnSuccess();
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;
@@ -97,7 +98,8 @@ public class ServerLogic extends CommonLogic {
             return;
         }
 
-        suppressStdErr();
+        VariousUtils.suppressStdOut();
+        VariousUtils.suppressStdErr();
 
         executorService.shutdownNow();
 

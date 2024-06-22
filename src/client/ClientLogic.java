@@ -54,6 +54,7 @@ public class ClientLogic extends CommonLogic {
             Path finalFile = renameFile(finalFileTempPath, fileName);
 
             System.out.println("Success! Downloaded file: " + finalFile);
+            udpcastService.printStatsOnSuccess();
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;
