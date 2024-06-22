@@ -98,9 +98,7 @@ public abstract class UdpcastService {
                 }
 
                 if (!line.startsWith(speedLineStart)) {
-                    if (line.startsWith("Timeout")) {
-                        System.out.print("Lost connection with one of clients - waiting...");
-                    } else if (line.startsWith("Dropping client")) {
+                    if (line.startsWith("Dropping one of clients due to its timeout")) {
                         System.out.println("Dropped one of clients");
                     }
 
@@ -127,6 +125,9 @@ public abstract class UdpcastService {
             if (isDigit) {
                 result.append(character);
             } else if (!isSpace) {
+                if (character == 'K' || character == 'k') {
+                    result.append("000");
+                }
                 break;
             }
         }
@@ -139,6 +140,7 @@ public abstract class UdpcastService {
         formatter.setRoundingMode(RoundingMode.CEILING);
         double speedMBps = (double) currentBytes / (1024 * 1024);
         String outText = "Speed: " + formatter.format(speedMBps) + " MBps, estimated time left: ";
+
         if (remainingSizeInBytes > 0) {
             long secondsElapsed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime);
             long megabytesDownloaded = FilePartUtils.bytesToMegabytes(downloadSizeInBytes - remainingSizeInBytes);
