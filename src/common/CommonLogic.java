@@ -70,7 +70,7 @@ public abstract class CommonLogic {
         return Paths.get(String.valueOf(parent), newName).toAbsolutePath();
     }
 
-    private void suppressStdErr() {
+    protected void suppressStdErr() {
         PrintStream dummyStream = new PrintStream(new OutputStream() {
             public void write(int b) {
             }

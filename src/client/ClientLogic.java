@@ -57,7 +57,6 @@ public class ClientLogic extends CommonLogic {
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;
-        } finally {
             cleanup();
         }
 

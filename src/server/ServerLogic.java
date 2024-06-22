@@ -85,7 +85,6 @@ public class ServerLogic extends CommonLogic {
             result = StatusEnum.Success;
         } catch (DownloadException e) {
             result = StatusEnum.Error;
-        } finally {
             cleanup();
         }
 
@@ -97,6 +96,8 @@ public class ServerLogic extends CommonLogic {
         if (invokedCleanup.getAndSet(true)) {
             return;
         }
+
+        suppressStdErr();
 
         executorService.shutdownNow();
 
