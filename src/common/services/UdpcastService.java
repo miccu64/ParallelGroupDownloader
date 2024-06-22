@@ -54,11 +54,13 @@ public abstract class UdpcastService {
         try {
             System.out.println("UDPcast - processing file part: " + filePath.toAbsolutePath());
             process = processBuilder.start();
-            getProcessOutput(process);
+            List<String> latestLines = getProcessOutput(process);
 
             process.waitFor(1, TimeUnit.SECONDS);
             int exitCode = process.exitValue();
             if (exitCode != 0) {
+                System.err.println("Latest 10 lines of UDPCast:");
+                System.err.println(latestLines);
                 throw new IOException("Error: exit code=" + exitCode);
             }
         } catch (IOException | InterruptedException e) {
@@ -80,7 +82,8 @@ public abstract class UdpcastService {
         }
     }
 
-    private void getProcessOutput(Process process) throws IOException {
+    private List<String> getProcessOutput(Process process) throws IOException {
+        ArrayList<String> latestLines = new ArrayList<>();
         try (InputStream is = process.getInputStream();
              InputStreamReader isReader = new InputStreamReader(is);
              BufferedReader reader = new BufferedReader(isReader)) {
@@ -89,6 +92,11 @@ public abstract class UdpcastService {
             long latestBytes = 0;
             String line;
             while ((line = reader.readLine()) != null) {
+                latestLines.add(line);
+                if (latestLines.size() > 10) {
+                    latestLines.remove(0);
+                }
+
                 if (!line.startsWith(speedLineStart)) {
                     if (line.startsWith("Timeout")) {
                         System.out.print("Lost connection with one of clients - waiting...");
@@ -107,6 +115,8 @@ public abstract class UdpcastService {
                 printDownloadInfo(currentBytes);
             }
         }
+
+        return latestLines;
     }
 
     private long parseBytes(String text) {
