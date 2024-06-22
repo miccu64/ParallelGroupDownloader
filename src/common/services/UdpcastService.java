@@ -127,6 +127,8 @@ public abstract class UdpcastService {
             } else if (!isSpace) {
                 if (character == 'K' || character == 'k') {
                     result.append("000");
+                } else if (character == 'M' || character == 'm') {
+                    result.append("000000");
                 }
                 break;
             }
