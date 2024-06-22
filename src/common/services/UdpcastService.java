@@ -5,8 +5,10 @@ import common.models.UdpcastConfiguration;
 import common.utils.FilePartUtils;
 
 import java.io.*;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,8 +125,10 @@ public abstract class UdpcastService {
     }
 
     private void printDownloadInfo(long currentBytes) {
-        int speedMBps = FilePartUtils.bytesToMegabytes(currentBytes);
-        String outText = "Speed: " + speedMBps + "MBps, estimated time left: ";
+        DecimalFormat formatter = new DecimalFormat("#.#");
+        formatter.setRoundingMode(RoundingMode.CEILING);
+        double speedMBps = (double) currentBytes / (1024 * 1024);
+        String outText = "Speed: " + formatter.format(speedMBps) + " MBps, estimated time left: ";
         if (remainingSizeInBytes > 0) {
             long secondsElapsed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime);
             long megabytesDownloaded = FilePartUtils.bytesToMegabytes(downloadSizeInBytes - remainingSizeInBytes);

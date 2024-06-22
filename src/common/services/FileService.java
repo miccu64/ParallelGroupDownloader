@@ -59,8 +59,6 @@ public class FileService {
     }
 
     private String calcChecksumAndMerge(Path filePart) throws DownloadException {
-        System.out.println("Joining and calculating checksum for file part: " + filePart.getFileName());
-
         Adler32 adler = new Adler32();
         try (FileChannel out = FileChannel.open(finalFilePath, WRITE, APPEND)) {
             try (InputStream inputStream = Files.newInputStream(filePart)) {
@@ -82,7 +80,6 @@ public class FileService {
             throw new DownloadException("Error while calculating checksum and joining parts of file." + error);
         }
 
-        System.out.println("Merged file part: " + filePart.getFileName());
         return String.valueOf(adler.getValue());
     }
 }

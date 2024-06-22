@@ -5,10 +5,10 @@ import common.models.StatusEnum;
 import common.utils.FilePartUtils;
 import common.utils.VariousUtils;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -86,7 +86,7 @@ public class FileDownloader implements Callable<StatusEnum> {
         int blockNumber = 0;
         long transferredCount;
 
-        try (InputStream inputStream = this.url.openStream();
+        try (BufferedInputStream inputStream = new BufferedInputStream(this.url.openStream());
              ReadableByteChannel channel = Channels.newChannel(inputStream)) {
             System.out.println("Download started! Url: " + url);
 
@@ -101,7 +101,6 @@ public class FileDownloader implements Callable<StatusEnum> {
                     System.out.println("Server downloading: " + filePartPath.getFileName());
                     transferredCount = fileOutputChannel.transferFrom(channel, 0, blockSizeInBytes);
                 } catch (SecurityException | IOException e) {
-                    processedFiles.add(filePartPath);
                     System.err.println("Cannot save to file: " + filePartPath + ". Error: " + e.getMessage());
                     return StatusEnum.Error;
                 }
