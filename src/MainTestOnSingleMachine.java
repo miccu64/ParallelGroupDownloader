@@ -17,11 +17,11 @@ public class MainTestOnSingleMachine {
         CommonLogic clientLogic = new ClientLogic(configurationClient);
 
         //String url = "/home/lubuntu/Desktop/file.file";
-        String url = "D:/Studia/Magisterka/ParallelGroupDownloader.zip";
+        //String url = "D:/Studia/Magisterka/ParallelGroupDownloader.zip";
         //String url = "D:\\Programy\\VirtualBoxMachines\\xubuntu-22.04.3-desktop-amd64.iso";
         //String url = "https://cdimage.ubuntu.com/lubuntu/releases/24.04/release/lubuntu-24.04-desktop-amd64.iso";
-        //String url = "/home/lubuntu/Downloads/lubuntu-24.04-desktop-amd64.iso";
-        String[] serverArgs = new String[]{"-url", url, "-directory", "downloadsServer", "-blocksize", "512"};
+        String url = "/home/lubuntu/Downloads/lubuntu-24.04-desktop-amd64.iso";
+        String[] serverArgs = new String[]{"-url", url, "-directory", "downloadsServer", "-blocksize", "1222"};
         UdpcastConfiguration configurationServer = new UdpcastConfiguration(serverArgs);
         CommonLogic serverLogic = new ServerLogic(configurationServer);
 
