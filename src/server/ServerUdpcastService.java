@@ -32,9 +32,9 @@ public class ServerUdpcastService extends UdpcastService {
             additionalParams.add("--min-receivers");
             additionalParams.add(String.valueOf(expectedClients));
             additionalParams.add("--start-timeout");
-            additionalParams.add("30");
+            additionalParams.add("60");
             additionalParams.add("--max-wait");
-            additionalParams.add("20");
+            additionalParams.add("50");
 
             System.out.println("Expected clients: " + expectedClients);
         }
