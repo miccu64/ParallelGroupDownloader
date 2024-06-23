@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class ServerUdpcastService extends UdpcastService {
+    private int expectedClients = 0;
+
     public ServerUdpcastService(UdpcastConfiguration configuration) throws DownloadException {
         super("udp-sender", configuration,
                 new ArrayList<>(Arrays.asList(
@@ -25,7 +27,19 @@ public class ServerUdpcastService extends UdpcastService {
 
     @Override
     public void processFile(Path filePath) throws DownloadException {
-        super.processFile(filePath);
+        ArrayList<String> additionalParams = new ArrayList<>();
+        if (expectedClients > 0) {
+            additionalParams.add("--min-receivers");
+            additionalParams.add(String.valueOf(expectedClients));
+            additionalParams.add("--start-timeout");
+            additionalParams.add("30");
+            additionalParams.add("--max-wait");
+            additionalParams.add("20");
+
+            System.out.println("Expected clients: " + expectedClients);
+        }
+        expectedClients = 0;
+        super.processFile(filePath, additionalParams);
 
         // udp-receiver has by default 500 delay in closing (--exit-wait parameter)
         // receiver waits 500ms after receiving the final REQACK in order to guard against loss of the final ACK
@@ -41,5 +55,17 @@ public class ServerUdpcastService extends UdpcastService {
             } catch (DownloadException | IOException ignored) {
             }
         }
+    }
+
+    @Override
+    protected long processLine(String line, long latestBytes) {
+        if (line.startsWith("Dropping one of clients")) {
+            System.out.println("Dropped one of clients");
+            expectedClients -= 1;
+        } else if (line.startsWith("New connection from")) {
+            expectedClients += 1;
+        }
+
+        return super.processLine(line, latestBytes);
     }
 }

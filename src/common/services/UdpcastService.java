@@ -44,15 +44,22 @@ public abstract class UdpcastService {
     }
 
     public void processFile(Path filePath) throws DownloadException {
+        processFile(filePath, null);
+    }
+
+    protected void processFile(Path filePath, List<String> additionalParams) throws DownloadException {
         FilePartUtils.markToDeleteOnExit(filePath);
 
         List<String> params = new ArrayList<>(runParams);
+        if (additionalParams != null) {
+            params.addAll(additionalParams);
+        }
         params.add("--file");
         params.add(filePath.toAbsolutePath().toString());
 
+        System.out.println("UDPcast - processing file part: " + filePath.toAbsolutePath());
         ProcessBuilder processBuilder = new ProcessBuilder(params).redirectErrorStream(true);
         try {
-            System.out.println("UDPcast - processing file part: " + filePath.toAbsolutePath());
             process = processBuilder.start();
             List<String> latestLines = getProcessOutput(process);
 
@@ -97,8 +104,6 @@ public abstract class UdpcastService {
         try (InputStream is = process.getInputStream();
              InputStreamReader isReader = new InputStreamReader(is);
              BufferedReader reader = new BufferedReader(isReader)) {
-            String speedLineStart = "bytes=";
-            long bytes;
             long latestBytes = 0;
             String line;
             while ((line = reader.readLine()) != null) {
@@ -107,24 +112,26 @@ public abstract class UdpcastService {
                     latestLines.remove(0);
                 }
 
-                if (!line.startsWith(speedLineStart)) {
-                    if (line.startsWith("Dropping one of clients due to its timeout")) {
-                        System.out.println("Dropped one of clients");
-                    }
-
-                    continue;
-                }
-
-                bytes = parseBytes(line.substring(speedLineStart.length()));
-                long currentBytes = bytes - latestBytes;
-                latestBytes = bytes;
-                remainingSizeInBytes -= currentBytes;
-
-                printDownloadInfo(currentBytes);
+                latestBytes = processLine(line, latestBytes);
             }
         }
 
         return latestLines;
+    }
+
+    protected long processLine(String line, long latestBytes) {
+        String speedLineStart = "bytes=";
+        if (!line.startsWith(speedLineStart)) {
+            return latestBytes;
+        }
+
+        long bytes = parseBytes(line.substring(speedLineStart.length()));
+        long currentBytes = bytes - latestBytes;
+        latestBytes = bytes;
+        remainingSizeInBytes -= currentBytes;
+
+        printDownloadInfo(currentBytes);
+        return latestBytes;
     }
 
     private long parseBytes(String text) {
