@@ -42,6 +42,7 @@ public class FileService {
     }
 
     public List<String> waitForChecksums() throws DownloadException {
+        System.out.println("Waiting for all files to join...");
         List<String> checksums = new ArrayList<>();
         for (Future<String> future : futures) {
             try {
