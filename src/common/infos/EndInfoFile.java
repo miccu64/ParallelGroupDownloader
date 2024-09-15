@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class EndInfoFile extends InfoFile {
+    public static final String errorContent = "ERROR!!!";
+
     public final Path filePath;
 
     private final List<String> checksums;
@@ -39,6 +41,10 @@ public class EndInfoFile extends InfoFile {
         if (values.isEmpty()) {
             throw new InfoFileException(this.errorText + filePath);
         }
+        if (values.size() == 1 && values.get(0).equals(errorContent)) {
+            throw new DownloadException("Server stopped. Exiting...");
+        }
+
         this.checksums = values;
     }
 

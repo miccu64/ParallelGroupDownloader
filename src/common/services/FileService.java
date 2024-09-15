@@ -34,10 +34,11 @@ public class FileService {
         }
     }
 
-    public void addFileToProcess(Path path) {
+    public void addFileToProcess(Path path) throws DownloadException {
         try {
             futures.add(executorService.submit(() -> calcChecksumAndMerge(path)));
-        } catch (RejectedExecutionException ignored) {
+        } catch (RejectedExecutionException exception) {
+            throw new DownloadException("Cannot add file to process");
         }
     }
 

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 public class ServerUdpcastService extends UdpcastService {
     private int expectedClients = 0;
@@ -20,21 +21,20 @@ public class ServerUdpcastService extends UdpcastService {
         super("udp-sender", configuration,
                 new ArrayList<>(Arrays.asList(
                         "--min-wait", "1",
-                        "--start-timeout", "1",
                         "--full-duplex"
                 )));
     }
 
     @Override
-    public void processFile(Path filePath) throws DownloadException {
+    public void processFile(Path filePath) throws DownloadException {System.out.println("Server processFile");
         ArrayList<String> additionalParams = new ArrayList<>();
         if (expectedClients > 0) {
             additionalParams.add("--min-receivers");
             additionalParams.add(String.valueOf(expectedClients));
             additionalParams.add("--start-timeout");
-            additionalParams.add("60");
+            additionalParams.add("15");
             additionalParams.add("--max-wait");
-            additionalParams.add("50");
+            additionalParams.add("10");
 
             System.out.println("Expected clients: " + expectedClients);
         }
@@ -47,12 +47,31 @@ public class ServerUdpcastService extends UdpcastService {
     }
 
     public void shutdownClients() {
-        if (process != null && !process.isAlive()) {
+        System.out.println("shutdownClients");
+        if (process != null) {
+            System.out.println("process != null");
+            if (process.isAlive()) {
+                super.stopUdpcast();
+                System.out.println("stopUdpcast");
+            }
+
             try {
+                if (!process.waitFor(1, TimeUnit.SECONDS)) {
+                    System.out.println("waitFor failed");
+                    return;
+                }
+                System.out.println("waitFor success");
+
                 Path tempDir = Files.createTempDirectory(null);
-                EndInfoFile endInfoFile = new EndInfoFile(String.valueOf(tempDir), Collections.singletonList("ERROR!!!"));
-                super.processFile(endInfoFile.filePath);
-            } catch (DownloadException | IOException ignored) {
+                EndInfoFile endInfoFile = new EndInfoFile(String.valueOf(tempDir), Collections.singletonList(EndInfoFile.errorContent));
+                ArrayList<String> additionalParams = new ArrayList<>();
+                additionalParams.add("--start-timeout");
+                additionalParams.add("1");
+                additionalParams.add("--max-wait");
+                additionalParams.add("1");
+
+                super.processFile(endInfoFile.filePath, additionalParams);
+            } catch (DownloadException | IOException | InterruptedException ignored) {
             }
         }
     }

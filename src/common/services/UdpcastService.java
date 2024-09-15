@@ -63,7 +63,7 @@ public abstract class UdpcastService {
             process = processBuilder.start();
             List<String> latestLines = getProcessOutput(process);
 
-            process.waitFor(1, TimeUnit.SECONDS);
+            process.waitFor(2, TimeUnit.SECONDS);
             int exitCode = process.exitValue();
             if (exitCode != 0) {
                 System.err.println("Latest 10 lines of UDPCast:");
