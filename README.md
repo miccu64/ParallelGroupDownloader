@@ -1,27 +1,56 @@
 # ParallelGroupDownloader
 
-Pełna nazwa projektu:
+The work presents the ParallelGroupDownloader tool created in Java and is used to copy files within a computer room. It was designed as an overlay for the open-source UDPCast application in order to expand the program's functionality, make it simpler and automate its use. The main assumptions of the project are to achieve the highest possible download speed using the full potential of the network and devices, reliability and auto-configuration.
 
-Narzędzie do szybkiego kopiowania plików w obrębie sali komputerowej
+## Expectations
 
-## Podstawowe wymagania
+Before implementing the program, detailed expectations regarding the functionality of the solution were collected. First, they served as a pointer to find an existing application that would have certain features, but when it turned out that such a program did not exist, these requirements became the basis for the ParallelGroupDownloader project.
+Requirements specification:
+- code written in Java without additional dependencies and libraries to ensure greater portability,
+- using the UDPCast program for fast data transfer within one network,
+- auto-configuration to minimize the need for user interaction,
+- selection of operating parameters based on the current system configuration,
+- automatic detection of whether the machine on which the program is running can download the file,
+- support for downloading files located on a local disk or in a network location,
+- maximum resistance to failures,
+- Linux support,
+- clear status after completion of work by handling Unix signaling of program success - the return value indicating success is zero, another status means error,
+- in case of a download error, the downloaded data will be deleted to free up space,
+- ensuring error-free file transfer,
+- configuration of parameters from the command line,
+- reporting of transfer progress at the user's request,
+- highest possible use of the local network,
+- generally understood operational effectiveness.
 
-1. Java bez dodatkowych zależności/bibliotek
-2. Autokonfiguracja.
-3. Dobór parametrów pracy na podstawie konfiguracji systemu np. ilość wolnej pamięci RAM.
-4. Automatyczne wykrywanie, które z maszyn nie mogą skopiować pliku np. z powodu braku miejsca na dysku.
-5. Maksymalna odporność na awarie.
-6. Jasny stan po zakończeniu pracy. Albo się udało, albo nie i nie ma śladu po wykonywanych operacjach (zwolnienie miejsca na dysku).
-7. Obsługa Unix-owego sygnalizowania powodzenia programu exit 0 - OK, exit zwraca coś innego oznacza błąd.
-8. Plik musi zostać przekazany bezbłędnie.
-9. Konfiguracja poprzez CLI
-10. Opcjonalne (można włączyć lub nie) raportowanie w trakcie pracy programu postępu kopiowania i czasu do zakończenia.
-11. I najważniejsze: szybkość działania.
+## Tech stack
+- Java 8
+- JUnit 5
+- UDPCast
 
+## Requirements
+The application needs:
+- Linux or Windows operating system,
+- installed Java runtime environment version 8 or higher,
+- in the case of Linux, make sure to have the GLIBC library version 2.34 or higher (built-in system library),
+- a network card that supports multicast.
 
-## Idea
-Chodzi o stworzenie aplikacji w Java, która będzie kopiować duży plik pomiędzy maszynami na jednej sali komputerowej. Źródłem pliku jest jedna z maszyn na sali lub serwer(y) WWW. Wszystkie maszyny na sali komputerowej są w tej samej sieci IP. Wiele z nich zostanie uruchomionych, lecz kolejność uruchomień może być dowolna. I tu istotna jest autokonfiguracja. Chodzi o to, aby automatycznie rozpoznać, które z maszyn działają (uruchomiono na nich aplikacje). Program musi także opóźnić uruchomieni transferu dając szanse na dołączenie kolejnym maszynom. 
+### How application works
+The program was created in the client-server model, which results from the operation of the UDPCast tool used. Detailed operation diagram common to both sides of the model:
+1. Reading the parameters transferred when starting the program. 
+   1. If a URL is passed, the application runs in server mode, otherwise it becomes a client.
+   2. If an incorrect command is passed or a help command is used, the operating instructions are displayed and the program closes with a success code.
+2. Extract UDPCast to the default system temporary directory and try to run it to select the appropriate version. If none of them work, the program exits with an error.
+3. (Server only) Validate the URL, start downloading the file and get information about it.
+   1. If it is possible to write directly to RAM, part of the source file is directed there, otherwise it is saved to the indicated location.
+4. Receiving/sending a startup file with information and processing it.
+   1. Check whether there is enough free space to save data in the specified location.
+5. Transfer of subsequent parts of the correct file from the server to clients.
+   1. The file fragment is downloaded to RAM if possible, otherwise directly to disk.
+   2. After downloading, the fragment is passed to a separate thread, which calculates the checksum, saves it and then combines the current part of the file with the target file, and then removes the unnecessary part.
+6. (Server only) Upload the final file containing checksums and program termination.
+7. (Customer only) Checking each received file as soon as it is acquired until it is recognized as the final file.  
+   1. Comparison of calculated and downloaded checksums.
+   2. End of program.
 
-Aby nie odkrywać koła na nowo, warto zerknąć na gotowe rozwiązania do transferu 1 do wielu poprzez UDP i broadcast. 
-Jest taki zestaw programów: udp-sender / udp-receiver
-Tam są możliwości konfiguracji, kiedy transfer się faktycznie rozpocznie.
+### Building
+In order to build one needs to run build.sh script. This script works only on Linux OS.
